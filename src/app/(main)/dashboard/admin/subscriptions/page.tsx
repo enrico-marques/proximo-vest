@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import type { Subscription, Plan, User } from "@/generated/prisma";
+import { headers } from "next/headers";
 
 export const dynamic = "force-dynamic";
 
@@ -28,11 +29,18 @@ export default async function AdminSubscriptionsPage() {
     onForbiddenRedirect: "/dashboard",
   });
 
+  const headersList = headers();
+
   const res = await fetch(
     `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/api/subscriptions`,
     {
       cache: "no-store",
+      headers: {
+        // encaminha os cookies da requisição atual pra sua API interna
+        cookie: (await headersList).get("cookie") ?? "",
+      },
     }
+    
   );
 
   if (!res.ok) {

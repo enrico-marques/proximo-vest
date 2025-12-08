@@ -1,6 +1,7 @@
 // app/dashboard/admin/users/[userId]/edit/page.tsx
 import { requirePageAuth } from "@/utils/access";
 import { UserAccessPage } from "./_components/UserAcessPage";
+import { headers } from "next/headers";
 
 type ApiUser = {
   id: string;
@@ -23,11 +24,15 @@ export default async function UserEditAndAccessPage({
   });
 
   const { userId } = await params;
+  const headersList = headers();
 
   // usa a rota que você mandou: GET /api/admin/users?filter=<userId>
   const res = await fetch(`${process.env.API_URL}/users/list?id=${userId}`, {
     cache: "no-store",
-    // se preferir, dá pra mandar o cookie/jwt aqui também com credentials
+    headers: {
+      // encaminha os cookies da requisição atual pra sua API interna
+      cookie: (await headersList).get("cookie") ?? "",
+    },
   });
 
   if (!res.ok) {

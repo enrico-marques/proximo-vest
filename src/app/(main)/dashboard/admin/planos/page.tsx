@@ -1,6 +1,6 @@
 import { requirePageAuth } from "@/utils/access";
-import { prisma } from "@/lib/prisma";
 import { PlansAdminClient } from "./_components/plans-admin-client";
+import { headers } from "next/headers";
 
 export default async function PlansAdminPage() {
   await requirePageAuth({
@@ -11,7 +11,13 @@ export default async function PlansAdminPage() {
     onForbiddenRedirect: "/dashboard",
   });
 
-    const res = await fetch(`${process.env.API_URL}/plans/list`, {});
+    const res = await fetch(`${process.env.API_URL}/plans/list`, {
+    cache: "no-store",
+    headers: {
+      // encaminha os cookies da requisição atual pra sua API interna
+      cookie: (await headers()).get("cookie") ?? "",
+    },
+    });
 
   if (!res.ok) throw new Error("Falha ao buscar os planos");
 

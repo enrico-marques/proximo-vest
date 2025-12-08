@@ -2,6 +2,7 @@ import { BoardViewClient } from "./_components/board-view-client";
 import { DataTable } from "./_components/data-table";
 import { SectionCards } from "./_components/section-cards";
 import { requirePageAuth } from "@/utils/access";
+import { headers } from "next/headers";
 interface PageProps {
   params: { slug: string; id: string, idPhase: string };
 }
@@ -19,6 +20,10 @@ export default async function Provas({ params }: PageProps) {
 
   const res = await fetch(`${process.env.API_URL}/exam-phase/${idPhase}`, {
     cache: "no-store",
+    headers: {
+      // encaminha os cookies da requisição atual pra sua API interna
+      cookie: (await headers()).get("cookie") ?? "",
+    },
   });
 
   const phase = await res.json();

@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { EditQuestionForm } from "./_components/EditQuestionForm";
 import { requirePageAuth } from "@/utils/access";
+import { headers } from "next/headers";
 
 // Mesmo shape que você usou na página de preview
 type McqOption = {
@@ -84,6 +85,10 @@ type QuestionForEdit = QuestionApiResponse;
 async function getQuestion(questionId: string): Promise<QuestionForEdit> {
   const res = await fetch(`${process.env.API_URL}/question/${questionId}`, {
     cache: "no-store",
+    headers: {
+      // encaminha os cookies da requisição atual pra sua API interna
+      cookie: (await headers()).get("cookie") ?? "",
+    },
   });
 
   if (!res.ok) {

@@ -10,6 +10,7 @@ import {
 import { notFound } from "next/navigation";
 import type { Subscription, Plan, User } from "@/generated/prisma";
 import { AdminSubscriptionForm } from "./_components/admin-subscription-form";
+import { headers } from "next/headers";
 
 type SubscriptionWithRelations = Subscription & {
   user: Pick<User, "id" | "email" | "name">;
@@ -30,15 +31,24 @@ export default async function AdminSubscriptionEditPage({
   });
 
   const { userId } = await params;
+  const headersList = headers();
 
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "";
 
   const [subRes, plansRes] = await Promise.all([
     fetch(`${process.env.API_URL}/subscriptions/${userId}`, {
       cache: "no-store",
+      headers: {
+        // encaminha os cookies da requisição atual pra sua API interna
+        cookie: (await headersList).get("cookie") ?? "",
+      },
     }),
     fetch(`${process.env.API_URL}/plans/available`, {
       cache: "no-store",
+      headers: {
+        // encaminha os cookies da requisição atual pra sua API interna
+        cookie: (await headersList).get("cookie") ?? "",
+      },
     }),
   ]);
 
