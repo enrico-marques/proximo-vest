@@ -12,6 +12,7 @@ import {
 import { ApproveQuestionButton } from "./_components/ApproveQuestionButton";
 import { QuestionStatusBadge } from "./_components/status-badge";
 import { requirePageAuth } from "@/utils/access";
+import { headers } from "next/headers";
 
 
 const md = new MarkdownIt({
@@ -89,6 +90,10 @@ type QuestionResponse = {
 async function getQuestion(questionId: string): Promise<QuestionResponse> {
   const res = await fetch(`${process.env.API_URL}/question/${questionId}`, {
     cache: "no-store",
+    headers: {
+      // encaminha os cookies da requisição atual pra sua API interna
+      cookie: (await headers()).get("cookie") ?? "",
+    },
   });
 
   if (!res.ok) {

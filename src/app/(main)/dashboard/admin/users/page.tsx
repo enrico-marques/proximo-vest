@@ -24,11 +24,6 @@ export default async function Page() {
     },
   });
 
-  if (res.status === 401) {
-    // a API ainda acha que não tem sessão → trata de forma amigável
-    redirect("/login"); // ou "/dashboard"
-  }
-
   if (!res.ok) {
     const text = await res.text();
     console.error("ERRO /users/list:", res.status, text);

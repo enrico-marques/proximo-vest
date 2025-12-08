@@ -12,6 +12,7 @@ import {
   CardFooter,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { headers } from "next/headers";
 
 export default async function AssinaturaPage() {
   const { session, subscription, limits } = await requirePageAuth({
@@ -19,6 +20,7 @@ export default async function AssinaturaPage() {
     blockSuspended: true,
     blockDeleted: true,
   });
+  const headersList = headers();
 
   const subscriptionActive = isActiveSubscription(subscription);
   const currentPlanKey = subscription?.planKey ?? null;
@@ -28,6 +30,10 @@ export default async function AssinaturaPage() {
   // Busca planos via API (sem Prisma direto na página)
   const res = await fetch(`${process.env.API_URL}/plans/available`, {
     cache: "no-store",
+            headers: {
+      // encaminha os cookies da requisição atual pra sua API interna
+      cookie: (await headersList).get("cookie") ?? "",
+    },
   });
 
   if (!res.ok) {

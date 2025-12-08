@@ -1,5 +1,6 @@
 import { FormCreateEdition } from "./_components/formCreateEdition";
 import { requirePageAuth } from "@/utils/access";
+import { headers } from "next/headers";
 
 interface PageProps {
   params: { slug: string };
@@ -17,6 +18,10 @@ export default async function Provas({ params }: PageProps) {
   const { slug } = await params;
   const res = await fetch(`${process.env.API_URL}/exam-board/slug/${slug}`, {
     cache: "no-store",
+    headers: {
+      // encaminha os cookies da requisição atual pra sua API interna
+      cookie: (await headers()).get("cookie") ?? "",
+    },
   });
 
   const board = await res.json();

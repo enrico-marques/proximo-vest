@@ -1,6 +1,6 @@
 import { DataTable } from "./_components/data-table";
 import { SectionCards } from "./_components/section-cards";
-
+import { headers } from "next/headers";
 import { requirePageAuth } from "@/utils/access";
 
 export default async function Page() {
@@ -11,7 +11,15 @@ export default async function Page() {
     blockDeleted: true,
     onForbiddenRedirect: "/dashboard", // opcional
   });
-  const res = await fetch(`${process.env.API_URL}/roles/list`, {});
+
+  const headersList = headers();
+  const res = await fetch(`${process.env.API_URL}/roles/list`, {
+    cache: "no-store",
+    headers: {
+      // encaminha os cookies da requisição atual pra sua API interna
+      cookie: (await headersList).get("cookie") ?? "",
+    },
+  });
 
   if (!res.ok) throw new Error("Falha ao buscar boards");
 
