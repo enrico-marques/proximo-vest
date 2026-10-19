@@ -8,10 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "postinstall": "prisma generate",
-    "prisma-seed": "ts-node seeds/seeds-roles-permissions.ts"
-  },
-  "prisma": {
-    "seed": "ts-node prisma/seeds/permissions.ts"
+    "db:seed": "prisma db seed"
   },
   "dependencies": {
     "@better-upload/client": "^3.0.2",

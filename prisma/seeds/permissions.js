@@ -59,12 +59,44 @@ const permissions = [
   { resource: "subscription", action: "manage" },
   { resource: "subscription", action: "read" },
 
+  { resource: "teacherList", action: "manage" },
+
   { resource: "user", action: "access.update" },
   { resource: "user", action: "create" },
   { resource: "user", action: "delete" },
   { resource: "user", action: "read" },
   { resource: "user", action: "update" }
 ];
+
+// Grants applied on top of whatever was configured through the admin UI; never revokes.
+const roleGrants = {
+  Admin: ["plan.manage", "subscription.manage", "coupon.manage"],
+  Professor: ["teacherList.manage"],
+};
+
+async function findOrCreateRole(name) {
+  // Role names were typed by hand in the admin UI, so match case-insensitively.
+  const existing = await prisma.role.findFirst({
+    where: { name: { equals: name, mode: "insensitive" } },
+  });
+  return existing ?? prisma.role.create({ data: { name } });
+}
+
+async function grantRolePermissions() {
+  for (const [roleName, keys] of Object.entries(roleGrants)) {
+    const role = await findOrCreateRole(roleName);
+    const perms = await prisma.permission.findMany({ where: { key: { in: keys } } });
+
+    for (const perm of perms) {
+      await prisma.rolePermission.upsert({
+        where: { roleId_permissionId: { roleId: role.id, permissionId: perm.id } },
+        update: { granted: true },
+        create: { roleId: role.id, permissionId: perm.id, granted: true },
+      });
+    }
+    console.log(`🔐 ${role.name}: ${keys.join(", ")}`);
+  }
+}
 
 async function main() {
   console.log("🌱 Iniciando seed de permissões...");
@@ -82,6 +114,8 @@ async function main() {
       }
     });
   }
+
+  await grantRolePermissions();
 
   console.log("✅ Permissões atualizadas/criadas com sucesso!");
 }
