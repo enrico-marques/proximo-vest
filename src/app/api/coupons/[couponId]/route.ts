@@ -1,19 +1,12 @@
 // app/api/admin/coupons/[couponId]/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAPIAuth } from "@/utils/access";
 import type { CouponType, CouponTarget } from "@/generated/prisma";
+import { defineRoute } from "@/server/auth/define-route";
 
 
-export async function PUT(req: Request,  { params }: { params: Promise<{ couponId: string }> }) {
+export const PUT = defineRoute<{ couponId: string }>({ perm: "coupon.manage" }, async (req, { params }) => {
   const { couponId } =  await params;
-
-  await requireAPIAuth({
-    emailVerified: true,
-    blockSuspended: true,
-    blockDeleted: true,
-    // requiredRoles: ["ADMIN"],
-  });
 
   const body = await req.json();
 
@@ -50,21 +43,14 @@ export async function PUT(req: Request,  { params }: { params: Promise<{ couponI
   });
 
   return NextResponse.json(coupon);
-}
+});
 
-export async function DELETE(_req: Request, { params }: { params: Promise<{ couponId: string }> }) {
+export const DELETE = defineRoute<{ couponId: string }>({ perm: "coupon.manage" }, async (_req, { params }) => {
   const { couponId } = await params;
-
-  await requireAPIAuth({
-    emailVerified: true,
-    blockSuspended: true,
-    blockDeleted: true,
-    // requiredRoles: ["ADMIN"],
-  });
 
   await prisma.coupon.delete({
     where: { id: couponId },
   });
 
   return NextResponse.json({ ok: true });
-}
+});

@@ -1,18 +1,10 @@
 import { headers } from "next/headers";
-import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getUserSubscription } from "@/server/subscription";
 import { getPlanLimits, isActiveSubscription } from "@/server/subscription";
 
-import {
-  AuthProfile,
-  RoleName,
-  PermissionKey,
-  hasRole,
-  hasPermission,
-  can,
-} from "./access-core"; // 👈 importa do core
+import { type AuthProfile, type PermissionKey, type RoleName, can } from "./access-core";
 
 // ============================================================================
 // SESSÃO (Server only)
@@ -100,64 +92,6 @@ export async function getAuthProfile(
     roles: roleNames,
     perms: permsArray,
   };
-}
-
-export async function requireAPIAuth(opts?: {
-  role?: RoleName | RoleName[];
-  perm?: PermissionKey | PermissionKey[];
-  emailVerified?: boolean;
-  blockSuspended?: boolean;
-  blockDeleted?: boolean;
-}) {
-  const session = await getSessionOrNull();
-
-  if (!session?.user?.id) {
-    return {
-      ok: false as const,
-      res: NextResponse.json({ error: "Unauthorized" }, { status: 401 }),
-    };
-  }
-
-  const profile = await getAuthProfile(session.user.id as string);
-  if (!profile) {
-    return {
-      ok: false as const,
-      res: NextResponse.json({ error: "Unauthorized" }, { status: 401 }),
-    };
-  }
-
-  const blockSuspended = opts?.blockSuspended ?? true;
-  const blockDeleted = opts?.blockDeleted ?? true;
-
-  if (blockDeleted && profile.status === "deleted") {
-    return {
-      ok: false as const,
-      res: NextResponse.json({ error: "DeletedAccount" }, { status: 403 }),
-    };
-  }
-
-  if (blockSuspended && profile.status === "suspended") {
-    return {
-      ok: false as const,
-      res: NextResponse.json({ error: "Suspended" }, { status: 403 }),
-    };
-  }
-
-  if (opts?.emailVerified && !profile.emailVerified) {
-    return {
-      ok: false as const,
-      res: NextResponse.json({ error: "EmailNotVerified" }, { status: 403 }),
-    };
-  }
-
-  if (!can(profile, { role: opts?.role, perm: opts?.perm })) {
-    return {
-      ok: false as const,
-      res: NextResponse.json({ error: "Forbidden" }, { status: 403 }),
-    };
-  }
-
-  return { ok: true as const, session, profile };
 }
 
 // ============================================================================

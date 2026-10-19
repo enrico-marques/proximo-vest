@@ -1,18 +1,11 @@
 // app/api/admin/subscriptions/[userId]/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAPIAuth } from "@/utils/access";
+import { defineRoute } from "@/server/auth/define-route";
 
 
 
-export async function GET(_req: Request,  { params }: { params: Promise<{ userId: string }> }) {
-  await requireAPIAuth({
-    emailVerified: true,
-    blockSuspended: true,
-    blockDeleted: true,
-    // requiredRoles: ["ADMIN"],
-  });
-
+export const GET = defineRoute<{ userId: string }>({ perm: ["subscription.read", "subscription.manage"] }, async (_req, { params }) => {
   const { userId } = await params;
 
   const subscription = await prisma.subscription.findUnique({
@@ -28,16 +21,9 @@ export async function GET(_req: Request,  { params }: { params: Promise<{ userId
   }
 
   return NextResponse.json(subscription);
-}
+});
 
-export async function PUT(req: Request,  { params }: { params: Promise<{ userId: string }> }) {
-  await requireAPIAuth({
-    emailVerified: true,
-    blockSuspended: true,
-    blockDeleted: true,
-    // requiredRoles: ["ADMIN"],
-  });
-
+export const PUT = defineRoute<{ userId: string }>({ perm: "subscription.manage" }, async (req, { params }) => {
   const { userId } = await params;
 
   const body = await req.json();
@@ -77,4 +63,4 @@ export async function PUT(req: Request,  { params }: { params: Promise<{ userId:
   });
 
   return NextResponse.json(subscription);
-}
+});

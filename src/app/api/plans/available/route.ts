@@ -1,47 +1,37 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAPIAuth } from "@/utils/access";
+import { defineRoute } from "@/server/auth/define-route";
 
 /**
  * GET /api/plans/available
- * Lista todos os planos ativos
+ * Lista os planos ativos. Pública: alimenta a página de preços da landing.
  */
-export async function GET() {
-  const auth = await requireAPIAuth({
-    emailVerified: true,
-    blockSuspended: true,
-    blockDeleted: true,
-  });
-
-  if (!auth.ok) return auth.res;
-
+export const GET = defineRoute("public", async () => {
   const plans = await prisma.plan.findMany({
-    where: {
+    where: { isActive: true },
+    orderBy: { monthlyPrice: "asc" },
+    select: {
+      id: true,
+      key: true,
+      label: true,
+      description: true,
+      type: true,
+      monthlyPrice: true,
+      yearlyPrice: true,
+      highlight: true,
       isActive: true,
     },
-    orderBy: {
-      monthlyPrice: "asc", // mantém a ordenação que você já usava
-    },
   });
 
-  // Continua devolvendo o próprio objeto Plan do Prisma
   return NextResponse.json(plans);
-}
+});
 
 /**
  * POST /api/plans/available
  * Criação de um novo plano
  * Agora suporta mensal + anual + stripePriceIds
  */
-export async function POST(req: Request) {
-  const auth = await requireAPIAuth({
-    emailVerified: true,
-    blockSuspended: true,
-    blockDeleted: true,
-  });
-
-  if (!auth.ok) return auth.res;
-
+export const POST = defineRoute({ perm: "plan.manage" }, async (req) => {
   const body = await req.json();
 
   const {
@@ -94,4 +84,4 @@ export async function POST(req: Request) {
   });
 
   return NextResponse.json(plan, { status: 201 });
-}
+});

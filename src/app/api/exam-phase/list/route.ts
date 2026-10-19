@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "../../../../lib/prisma"
 import { z } from "zod"
-import { requireAPIAuth } from "@/utils/access"
+import { defineRoute } from "@/server/auth/define-route";
 
 // Função utilitária do Zod para tratar parâmetros de query
 const intFromQuery = z.preprocess(
@@ -21,13 +21,7 @@ const Schema = z.object({
   dayNumber: intFromQuery,
 })
 
-export async function GET(req: NextRequest) {
-    await requireAPIAuth({
-      emailVerified: true,
-      blockSuspended: true,
-      blockDeleted: true,
-  
-    });
+export const GET = defineRoute({ perm: ["examPhase.read", "examPhase.manage"] }, async (req) => {
   try {
     const { searchParams } = new URL(req.url)
 
@@ -60,4 +54,4 @@ export async function GET(req: NextRequest) {
       { status: 400 }
     )
   }
-}
+});

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
-import { requireAPIAuth } from "@/utils/access";
+import { defineRoute } from "@/server/auth/define-route";
 
 const permissionCreateSchema = z.object({
   resource: z.string().min(1, "Resource obrigatório"), // ex: "exam"
@@ -10,8 +10,7 @@ const permissionCreateSchema = z.object({
   isActive: z.boolean().optional(),                    // default true
 });
 
-export async function POST(req: Request) {
-  await requireAPIAuth({ perm: "perm.manage", emailVerified: true, blockSuspended: true, blockDeleted: true });
+export const POST = defineRoute({ perm: "perm.manage" }, async (req) => {
   try {
     const body = await req.json();
     const values = permissionCreateSchema.parse(body);
@@ -47,4 +46,4 @@ export async function POST(req: Request) {
       { status: 400 }
     );
   }
-}
+});

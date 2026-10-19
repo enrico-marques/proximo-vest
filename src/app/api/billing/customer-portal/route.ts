@@ -2,23 +2,14 @@ import { NextResponse } from "next/server";
 import Stripe from "stripe";
 
 import { prisma } from "@/lib/prisma";
-import { requireAPIAuth } from "@/utils/access";
+import { defineRoute } from "@/server/auth/define-route";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2025-10-29.clover",
 });
 
-export async function POST(req: Request) {
-  const auth = await requireAPIAuth({
-    emailVerified: true,
-    blockSuspended: true,
-    blockDeleted: true,
-  });
-
-  if (!auth.ok) return auth.res;
-
-  const { session } = auth;
-  const userId = session.user.id as string;
+export const POST = defineRoute({}, async (_req, { user }) => {
+  const userId = user.id;
 
   // Busca assinatura do usuário (pra pegar stripeCustomerId)
   const subscription = await prisma.subscription.findUnique({
@@ -45,4 +36,4 @@ export async function POST(req: Request) {
   });
 
   return NextResponse.json({ url: portalSession.url });
-}
+});

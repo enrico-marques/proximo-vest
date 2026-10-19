@@ -1,18 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "../../../../lib/prisma";
 import { z } from "zod";
-import { requireAPIAuth } from "@/utils/access";
+import { defineRoute } from "@/server/auth/define-route";
 
 type Params = { id: string };
-type Ctx = { params: Promise<Params> };
 
-export async function GET(_req: NextRequest, ctx: Ctx) {
-    await requireAPIAuth({
-      emailVerified: true,
-      blockSuspended: true,
-      blockDeleted: true,
-  
-    });
+export const GET = defineRoute<Params>({ perm: ["examPhase.read", "examPhase.manage"] }, async (_req, ctx) => {
   const { id: idStr } = await ctx.params;
   const id = Number(idStr);
   if (!Number.isFinite(id)) {
@@ -22,7 +15,7 @@ export async function GET(_req: NextRequest, ctx: Ctx) {
   const row = await prisma.examPhase.findUnique({ where: { id } });
   if (!row) return NextResponse.json({ error: { message: "Not found" } }, { status: 404 });
   return NextResponse.json(row);
-}
+});
 
 const PatchSchema = z.object({
   subjectBlock: z.string().nullable().optional(),
@@ -31,13 +24,7 @@ const PatchSchema = z.object({
   isDiscursive: z.boolean().optional(),
 });
 
-export async function PATCH(req: NextRequest, ctx: Ctx) {
-  await requireAPIAuth({
-    perm: ["examPhase.manage"],
-    emailVerified: true,
-    blockSuspended: true,
-    blockDeleted: true,
-  });
+export const PATCH = defineRoute<Params>({ perm: "examPhase.manage" }, async (req, ctx) => {
   try {
     const { id: idStr } = await ctx.params;
     const id = Number(idStr);
@@ -51,15 +38,9 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
   } catch (e: any) {
     return NextResponse.json({ error: { message: e.message } }, { status: 400 });
   }
-}
+});
 
-export async function DELETE(_req: NextRequest, ctx: Ctx) {
-  await requireAPIAuth({
-    perm: ["examPhase.manage"],
-    emailVerified: true,
-    blockSuspended: true,
-    blockDeleted: true,
-  });
+export const DELETE = defineRoute<Params>({ perm: "examPhase.manage" }, async (_req, ctx) => {
   const { id: idStr } = await ctx.params;
   const id = Number(idStr);
   if (!Number.isFinite(id)) {
@@ -68,4 +49,4 @@ export async function DELETE(_req: NextRequest, ctx: Ctx) {
 
   await prisma.examPhase.delete({ where: { id } });
   return NextResponse.json({ ok: true });
-}
+});

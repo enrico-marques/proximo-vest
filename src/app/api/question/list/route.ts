@@ -2,7 +2,7 @@ import { prisma } from "../../../../lib/prisma"
 import { NextRequest } from "next/server"
 import { z } from "zod"
 import { json, tryCatch } from "../../_utils"
-import { requireAPIAuth } from "@/utils/access"
+import { defineRoute } from "@/server/auth/define-route";
 
 const Schema = z.object({
   examPhaseId: z.coerce.number().int().optional(),
@@ -28,13 +28,7 @@ const Schema = z.object({
   pageSize: z.coerce.number().int().min(1).max(200).default(50),
 })
 
-export async function GET(req: NextRequest) {
-    await requireAPIAuth({
-      emailVerified: true,
-      blockSuspended: true,
-      blockDeleted: true,
-  
-    });
+export const GET = defineRoute({ perm: ["question.read", "question.create", "question.update"] }, async (req) => {
   return tryCatch(async () => {
     const { searchParams } = new URL(req.url)
 
@@ -99,4 +93,4 @@ export async function GET(req: NextRequest) {
 
     return json({ total, page, pageSize, items })
   })
-}
+});

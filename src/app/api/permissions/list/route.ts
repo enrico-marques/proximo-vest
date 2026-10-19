@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { defineRoute } from "@/server/auth/define-route";
 
-import { requireAPIAuth } from "@/utils/access";
 
-export async function GET(req: NextRequest) {
-  await requireAPIAuth({ perm: "perm.read", emailVerified: true, blockSuspended: true, blockDeleted: true });
+export const GET = defineRoute({ perm: ["perm.read", "perm.manage", "role.manage"] }, async (req) => {
   try {
     const { searchParams } = new URL(req.url);
     const onlyActive = searchParams.get("onlyActive");
@@ -27,4 +26,4 @@ export async function GET(req: NextRequest) {
       { status: 400 }
     );
   }
-}
+});

@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "../../../../lib/prisma";
 import { z } from "zod";
-import { requireAPIAuth } from "@/utils/access";
 
 import { readBody, tryCatch, badRequest } from "../../../api/_utils";
+import { defineRoute } from "@/server/auth/define-route";
 
 // ---------------- Zod Schemas ----------------
 const OptionKey = z.enum(["A", "B", "C", "D", "E"]);
@@ -69,13 +69,7 @@ const Schema = z.object({
 });
 
 // ---------------- Handler ----------------
-export async function POST(req: NextRequest) {
-  await requireAPIAuth({
-    perm: "question.create",
-    emailVerified: true,
-    blockSuspended: true,
-    blockDeleted: true,
-  });
+export const POST = defineRoute({ perm: "question.create" }, async (req) => {
   return tryCatch(async () => {
     const parsed = Schema.safeParse(await readBody(req));
     if (!parsed.success) {
@@ -184,4 +178,4 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(created, { status: 201 });
   });
-}
+});

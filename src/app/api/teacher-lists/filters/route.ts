@@ -1,12 +1,9 @@
 // app/api/teacher-lists/filters/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-// import { requireAPIAuth } from "@/utils/access";
+import { defineRoute } from "@/server/auth/define-route";
 
-export async function GET(req: NextRequest) {
-  // Se quiser travar por auth depois:
-  // await requireAPIAuth(req);
-
+export const GET = defineRoute({ perm: "teacherList.manage" }, async (req) => {
   const subjects = await prisma.subject.findMany({
     orderBy: { name: "asc" },
     select: { id: true, name: true },
@@ -50,4 +47,4 @@ export async function GET(req: NextRequest) {
     boards,
     years,
   });
-}
+});

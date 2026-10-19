@@ -8,23 +8,16 @@ import {
   notFound,
   badRequest,
 } from "../../../_utils";
-import { requireAPIAuth } from "@/utils/access";
+import { defineRoute } from "@/server/auth/define-route";
 
 type Params = { slug: string };
-type Ctx = { params: Promise<Params> };
 
 const PatchSchema = z.object({
   slug: z.string().min(2).optional(),
   name: z.string().min(2).optional(),
 });
 
-export async function GET(req: NextRequest, ctx: Ctx) {
-  await requireAPIAuth({
-    emailVerified: true,
-    blockSuspended: true,
-    blockDeleted: true,
-  });
-
+export const GET = defineRoute<Params>({ perm: ["examBoard.read", "examBoard.manage"] }, async (req, ctx) => {
   return tryCatch(async () => {
     const { slug } = await ctx.params;
 
@@ -36,4 +29,4 @@ export async function GET(req: NextRequest, ctx: Ctx) {
     if (!found) return notFound("ExamBoard not found");
     return json(found);
   });
-}
+});

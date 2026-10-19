@@ -1,8 +1,8 @@
 // app/api/teacher-lists/route.ts
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { requireAPIAuth } from "@/utils/access";
+import { defineRoute } from "@/server/auth/define-route";
 
 const createTeacherListSchema = z.object({
   name: z.string().min(3, "Nome muito curto"),
@@ -12,17 +12,9 @@ const createTeacherListSchema = z.object({
   questionIds: z.array(z.number().int()).min(1, "Selecione pelo menos 1 questão"),
 });
 
-export async function GET(req: NextRequest) {
-
-const {session} = await requireAPIAuth({
-    emailVerified: true,
-    blockDeleted: true,
-    blockSuspended: true
-})
-
-
+export const GET = defineRoute({ perm: "teacherList.manage" }, async (_req, { user }) => {
   const lists = await prisma.teacherList.findMany({
-    where: { teacherId: session?.user.id },
+    where: { teacherId: user.id },
     orderBy: { createdAt: "desc" },
     include: {
       _count: {
@@ -42,15 +34,9 @@ const {session} = await requireAPIAuth({
       questionsCount: l._count.questions,
     }))
   );
-}
+});
 
-export async function POST(req: NextRequest) {
-  const {session} = await requireAPIAuth({
-    emailVerified: true,
-    blockDeleted: true,
-    blockSuspended: true
-})
-
+export const POST = defineRoute({ perm: "teacherList.manage" }, async (req, { user }) => {
   const json = await req.json();
   const parsed = createTeacherListSchema.safeParse(json);
 
@@ -68,7 +54,7 @@ export async function POST(req: NextRequest) {
       data: {
         name,
         description,
-        teacherId: session?.user.id as string,
+        teacherId: user.id,
         teacherName,
       },
     });
@@ -85,4 +71,4 @@ export async function POST(req: NextRequest) {
   });
 
   return NextResponse.json(created, { status: 201 });
-}
+});

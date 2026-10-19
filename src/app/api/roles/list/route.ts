@@ -1,15 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "../../../../lib/prisma";
 import { z } from "zod";
-import { requireAPIAuth } from "@/utils/access";
+import { defineRoute } from "@/server/auth/define-route";
 
 const Schema = z.object({
   // "true" | "false" vindo da URL, opcional
   isActive: z.enum(["true", "false"]).optional(),
 });
 
-export async function GET(req: NextRequest) {
-  await requireAPIAuth({ perm: "role.read", emailVerified: true, blockSuspended: true, blockDeleted: true });
+export const GET = defineRoute({ perm: ["role.read", "role.manage"] }, async (req) => {
   try {
     const { searchParams } = new URL(req.url);
     const isActiveParam = searchParams.get("isActive");
@@ -37,4 +36,4 @@ export async function GET(req: NextRequest) {
       { status: 400 }
     );
   }
-}
+});

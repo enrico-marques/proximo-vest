@@ -1,20 +1,14 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "../../../../lib/prisma"
 import { z } from "zod"
-import { requireAPIAuth } from "@/utils/access"
+import { defineRoute } from "@/server/auth/define-route";
 
 const Schema = z.object({
   examBoardId: z.coerce.number().int().optional(), // coerce permite receber "1" como número
   year: z.coerce.number().int().optional(),
 })
 
-export async function GET(req: NextRequest) {
-  await requireAPIAuth({
-    emailVerified: true,
-    blockSuspended: true,
-    blockDeleted: true,
-
-  });
+export const GET = defineRoute({ perm: ["examEdition.read", "examEdition.manage"] }, async (req) => {
   try {
     const { searchParams } = new URL(req.url)
     const examBoardId = searchParams.get("examBoardId")
@@ -39,4 +33,4 @@ export async function GET(req: NextRequest) {
   } catch (e: any) {
     return NextResponse.json({ error: { message: e.message } }, { status: 400 })
   }
-}
+});

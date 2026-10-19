@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { defineRoute } from "@/server/auth/define-route";
 
-import { requireAPIAuth } from "@/utils/access";
 
 export const roleCreateSchema = z.object({
   name: z.string().min(2, "Nome muito curto"),
@@ -11,8 +11,7 @@ export const roleCreateSchema = z.object({
 });
 
 
-export async function POST(req: Request) {
-  await requireAPIAuth({ perm: "role.manage", emailVerified: true, blockSuspended: true, blockDeleted: true });
+export const POST = defineRoute({ perm: "role.manage" }, async (req) => {
   try {
     const body = await req.json();
     const { name, description, isActive } = roleCreateSchema.parse(body);
@@ -44,4 +43,4 @@ export async function POST(req: Request) {
       { status: 500 }
     );
   }
-}
+});

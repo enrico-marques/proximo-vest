@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "../../../../lib/prisma";
 import { z } from "zod";
+import { defineRoute } from "@/server/auth/define-route";
 
 const OptionKey = z.enum(["A","B","C","D","E"]);
 const ItemSchema = z.object({
@@ -40,7 +41,7 @@ const Schema = z.object({
   onConflict: z.enum(["UPSERT","SKIP","ERROR"]).default("UPSERT")
 });
 
-export async function POST(req: NextRequest) {
+export const POST = defineRoute({ perm: "question.batch" }, async (req) => {
   const { items, onConflict } = Schema.parse(await req.json());
   const errors: { index: number; message: string }[] = [];
   let ok = 0, skipped = 0;
@@ -138,4 +139,4 @@ export async function POST(req: NextRequest) {
   }
 
   return NextResponse.json({ summary: { ok, skipped, errors: errors.length }, errors });
-}
+});

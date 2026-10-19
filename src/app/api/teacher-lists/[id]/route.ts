@@ -1,8 +1,8 @@
 // app/api/teacher-lists/[id]/route.ts
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { requireAPIAuth } from "@/utils/access";
+import { defineRoute } from "@/server/auth/define-route";
 
 const updateTeacherListSchema = z.object({
   name: z.string().min(3).optional(),
@@ -12,22 +12,15 @@ const updateTeacherListSchema = z.object({
   questionIds: z.array(z.number().int()).optional(),
 });
 
-type RouteContext = {
-  params: { id: string };
-};
-
 type Params = { id: string };
-type Ctx = { params: Promise<Params> };
 
-export async function GET(req: NextRequest, ctx: Ctx) {
-  const { session } = await requireAPIAuth();
-
-  const { id } = await ctx.params;
+export const GET = defineRoute<Params>({ perm: "teacherList.manage" }, async (_req, { params, user }) => {
+  const { id } = params;
 
   const list = await prisma.teacherList.findFirst({
     where: {
       id: id,
-      teacherId: session?.user.id,
+      teacherId: user.id,
     },
     include: {
       questions: {
@@ -57,19 +50,15 @@ export async function GET(req: NextRequest, ctx: Ctx) {
   }
 
   return NextResponse.json(list);
-}
+});
 
-
-
-export async function PUT(req: NextRequest, ctx: Ctx) {
-  const { session } = await requireAPIAuth();
-
-  const { id } = await ctx.params;
+export const PUT = defineRoute<Params>({ perm: "teacherList.manage" }, async (req, { params, user }) => {
+  const { id } = params;
 
   const existing = await prisma.teacherList.findFirst({
     where: {
       id: id,
-      teacherId: session?.user.id,
+      teacherId: user.id,
     },
   });
 
@@ -120,18 +109,15 @@ export async function PUT(req: NextRequest, ctx: Ctx) {
   });
 
   return NextResponse.json(updated);
-}
+});
 
-
-export async function DELETE(req: NextRequest, ctx: Ctx) {
-  const { session } = await requireAPIAuth();
-
-  const { id } = await ctx.params;
+export const DELETE = defineRoute<Params>({ perm: "teacherList.manage" }, async (_req, { params, user }) => {
+  const { id } = params;
 
   const existing = await prisma.teacherList.findFirst({
     where: {
       id: id,
-      teacherId: session?.user.id,
+      teacherId: user.id,
     },
   });
 
@@ -147,4 +133,4 @@ export async function DELETE(req: NextRequest, ctx: Ctx) {
   });
 
   return NextResponse.json({ success: true });
-}
+});

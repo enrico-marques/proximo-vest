@@ -2,11 +2,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@/generated/prisma";
+import { defineRoute } from "@/server/auth/define-route";
 
 // opcional: força runtime node
 export const runtime = "nodejs";
 
-export async function GET(req: NextRequest) {
+export const GET = defineRoute({ perm: "teacherList.manage" }, async (req) => {
   const url = new URL(req.url);
 
   const subjectIdStr = url.searchParams.get("subjectId");
@@ -173,4 +174,4 @@ export async function GET(req: NextRequest) {
   });
 
   return NextResponse.json(dto);
-}
+});

@@ -2,18 +2,12 @@ import { prisma } from "../../../../lib/prisma";
 import { NextRequest } from "next/server";
 import { z } from "zod";
 import { json, readBody, tryCatch, notFound, badRequest } from "../../_utils";
+import { defineRoute } from "@/server/auth/define-route";
 
-import { requireAPIAuth } from "@/utils/access";
 
 type Params = { id: string };
-type Ctx = { params: Promise<Params> };
 
-export async function GET(_req: NextRequest, ctx: Ctx) {
-  await requireAPIAuth({
-    emailVerified: true,
-    blockSuspended: true,
-    blockDeleted: true,
-  });
+export const GET = defineRoute<Params>({ perm: ["question.read", "question.create", "question.update"] }, async (_req, ctx) => {
   return tryCatch(async () => {
     const { id: idStr } = await ctx.params;
     const id = Number(idStr);
@@ -32,7 +26,7 @@ export async function GET(_req: NextRequest, ctx: Ctx) {
     if (!found) return notFound("Question not found");
     return json(found);
   });
-}
+});
 
 const OptionKey = z.enum(["A", "B", "C", "D", "E"]);
 
@@ -85,13 +79,7 @@ const PatchSchema = z.object({
     .optional(),
 });
 
-export async function PATCH(req: NextRequest, ctx: Ctx) {
-  await requireAPIAuth({
-    perm: "question.update",
-    emailVerified: true,
-    blockSuspended: true,
-    blockDeleted: true,
-  });
+export const PATCH = defineRoute<Params>({ perm: "question.update" }, async (req, ctx) => {
   return tryCatch(async () => {
     const { id: idStr } = await ctx.params;
     const id = Number(idStr);
@@ -197,15 +185,9 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
 
     return json(full);
   });
-}
+});
 
-export async function DELETE(_req: NextRequest, ctx: Ctx) {
-  await requireAPIAuth({
-    perm: "question.delete",
-    emailVerified: true,
-    blockSuspended: true,
-    blockDeleted: true,
-  });
+export const DELETE = defineRoute<Params>({ perm: "question.delete" }, async (_req, ctx) => {
   return tryCatch(async () => {
     const { id: idStr } = await ctx.params;
     const id = Number(idStr);
@@ -214,4 +196,4 @@ export async function DELETE(_req: NextRequest, ctx: Ctx) {
     await prisma.question.delete({ where: { id } });
     return json({ ok: true });
   });
-}
+});

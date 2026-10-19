@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "../../../../lib/prisma";
 import { z } from "zod";
-import { requireAPIAuth } from "@/utils/access";
+import { defineRoute } from "@/server/auth/define-route";
 
 const Schema = z.object({
   examBoardId: z.number().int(),
@@ -10,14 +10,7 @@ const Schema = z.object({
   notes: z.string().nullable().optional()
 });
 
-export async function POST(req: NextRequest) {
-    await requireAPIAuth({
-      perm: ["examEdition.manage"],
-      emailVerified: true,
-      blockSuspended: true,
-      blockDeleted: true,
-  
-    });
+export const POST = defineRoute({ perm: "examEdition.manage" }, async (req) => {
   try {
     const body = Schema.parse(await req.json());
     const created = await prisma.examEdition.create({ data: body });
@@ -25,4 +18,4 @@ export async function POST(req: NextRequest) {
   } catch (e: any) {
     return NextResponse.json({ error: { message: e.message } }, { status: 400 });
   }
-}
+});

@@ -26,7 +26,7 @@ export default async function AdminSubscriptionEditPage({
     emailVerified: true,
     blockSuspended: true,
     blockDeleted: true,
-    // requiredRoles: ["ADMIN"],
+    perm: "subscription.manage",
     onForbiddenRedirect: "/dashboard",
   });
 

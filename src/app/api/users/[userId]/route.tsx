@@ -1,8 +1,8 @@
 // app/api/admin/users/[userId]/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAPIAuth } from "@/utils/access";
 import { z } from "zod";
+import { defineRoute } from "@/server/auth/define-route";
 
 
 // Ajusta os valores do enum conforme seu modelo Prisma
@@ -11,21 +11,7 @@ const UpdateUserSchema = z.object({
   email: z.string().email("E-mail inválido"),
   status: z.enum(["ACTIVE", "SUSPENDED", "DELETED"]),
 });
-type RouteContext = {
-  params: Promise<{ userId: string }>;
-};
-export async function PUT(
-  req: Request,
-  context: RouteContext
-) {
-  // Garante que só quem pode mexer chega aqui (ajusta conforme seu helper)
-  await requireAPIAuth({
-    perm: "user.update",
-    emailVerified: true,
-    blockSuspended: true,
-    blockDeleted: true,
-  });
-
+export const PUT = defineRoute<{ userId: string }>({ perm: "user.update" }, async (req, context) => {
   const { userId } = await context.params;
 
   const json = await req.json();
@@ -55,4 +41,4 @@ export async function PUT(
   });
 
   return NextResponse.json({ ok: true });
-}
+});

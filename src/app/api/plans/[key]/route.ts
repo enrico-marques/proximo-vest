@@ -1,20 +1,9 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAPIAuth } from "@/utils/access";
+import { defineRoute } from "@/server/auth/define-route";
 
 
-export async function PATCH(
-  req: Request,
-  { params }: { params: Promise<{ key: string }> }
-) {
-  const auth = await requireAPIAuth({
-    emailVerified: true,
-    blockSuspended: true,
-    blockDeleted: true,
-  });
-
-  if (!auth.ok) return auth.res;
-
+export const PATCH = defineRoute<{ key: string }>({ perm: "plan.manage" }, async (req, { params }) => {
   const { key } = await params;
   const body = await req.json();
 
@@ -33,4 +22,4 @@ export async function PATCH(
   });
 
   return NextResponse.json(plan);
-}
+});

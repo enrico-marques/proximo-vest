@@ -1,6 +1,8 @@
 import { route, type Router } from "@better-upload/server";
 import { toRouteHandler } from "@better-upload/server/adapters/next";
-import { cloudflare } from "@better-upload/server/clients"; // <-- CORRETO
+import { cloudflare } from "@better-upload/server/clients";
+
+import { defineRoute } from "@/server/auth/define-route";
 
 const client = cloudflare({
   accessKeyId: process.env.R2_ACCESS_KEY_ID!,
@@ -21,4 +23,9 @@ const router: Router = {
   },
 };
 
-export const { POST } = toRouteHandler(router);
+const handler = toRouteHandler(router);
+
+// Only question editors upload images (markdown editor in question create/edit).
+export const POST = defineRoute({ perm: ["question.create", "question.update"] }, (req) =>
+  handler.POST(req),
+);

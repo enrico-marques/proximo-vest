@@ -4,7 +4,7 @@ import { headers } from "next/headers";
 
 export default async function PlansAdminPage() {
   await requirePageAuth({
-      perm: "plan.read",
+    perm: ["plan.read", "plan.manage"],
     emailVerified: true,
     blockSuspended: true,
     blockDeleted: true,

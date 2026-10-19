@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 
 export default async function NewTeacherListPage() {
   // garante que só usuário autenticado/professor vê isso
-  await requirePageAuth();
+  await requirePageAuth({ perm: "teacherList.manage", emailVerified: true });
 
   return (
     <div className="flex flex-col gap-6">

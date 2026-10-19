@@ -3,22 +3,16 @@ import { prisma } from "../../../../lib/prisma";
 import { NextRequest } from "next/server";
 import { z } from "zod";
 import { json, readBody, tryCatch, notFound, badRequest } from "../../_utils";
-import { requireAPIAuth } from "@/utils/access";
+import { defineRoute } from "@/server/auth/define-route";
 
 type Params = { id: string };
-type Ctx = { params: Promise<Params> };
 
 const PatchSchema = z.object({
   slug: z.string().min(2).optional(),
   name: z.string().min(2).optional(),
 });
 
-export async function GET(req: NextRequest, ctx: Ctx) {
-  await requireAPIAuth({
-    emailVerified: true,
-    blockSuspended: true,
-    blockDeleted: true,
-  });
+export const GET = defineRoute<Params>({ perm: ["examBoard.read", "examBoard.manage"] }, async (req, ctx) => {
   return tryCatch(async () => {
     const { id: idStr } = await ctx.params;
     const id = Number(idStr);
@@ -28,15 +22,9 @@ export async function GET(req: NextRequest, ctx: Ctx) {
     if (!found) return notFound("ExamBoard not found");
     return json(found);
   });
-}
+});
 
-export async function PATCH(req: NextRequest, ctx: Ctx) {
-  await requireAPIAuth({
-    perm: "examBoard.manage",
-    emailVerified: true,
-    blockSuspended: true,
-    blockDeleted: true,
-  });
+export const PATCH = defineRoute<Params>({ perm: "examBoard.manage" }, async (req, ctx) => {
   return tryCatch(async () => {
     const { id: idStr } = await ctx.params;
     const id = Number(idStr);
@@ -51,15 +39,9 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
     });
     return json(updated);
   });
-}
+});
 
-export async function DELETE(_req: NextRequest, ctx: Ctx) {
-  await requireAPIAuth({
-    perm: "examBoard.manage",
-    emailVerified: true,
-    blockSuspended: true,
-    blockDeleted: true,
-  });
+export const DELETE = defineRoute<Params>({ perm: "examBoard.manage" }, async (_req, ctx) => {
   return tryCatch(async () => {
     const { id: idStr } = await ctx.params;
     const id = Number(idStr);
@@ -68,4 +50,4 @@ export async function DELETE(_req: NextRequest, ctx: Ctx) {
     await prisma.examBoard.delete({ where: { id } });
     return json({ ok: true });
   });
-}
+});

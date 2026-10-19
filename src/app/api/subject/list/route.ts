@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "../../../../lib/prisma"
 import { z } from "zod"
+import { defineRoute } from "@/server/auth/define-route";
 
 const Schema = z.object({
   filter: z.string().optional(),
 })
 
-export async function GET(req: NextRequest) {
+export const GET = defineRoute({ perm: ["subject.read", "subject.manage"] }, async (req) => {
   try {
     const { searchParams } = new URL(req.url)
     const filter = searchParams.get("filter") || undefined
@@ -29,4 +30,4 @@ export async function GET(req: NextRequest) {
   } catch (e: any) {
     return NextResponse.json({ error: { message: e.message } }, { status: 400 })
   }
-}
+});

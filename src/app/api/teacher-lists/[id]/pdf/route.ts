@@ -1,14 +1,10 @@
 // app/api/teacher-lists/[id]/pdf/route.ts
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import PDFDocument from "pdfkit/js/pdfkit.standalone";
 import { prisma } from "@/lib/prisma";
-import { requireAPIAuth } from "@/utils/access";
+import { defineRoute } from "@/server/auth/define-route";
 
 export const runtime = "nodejs";
-
-type RouteContext = {
-  params: { id: string };
-};
 
 // markdown bem simples: quebra texto x imagens ![alt](url)
 type MarkdownPart =
@@ -154,14 +150,10 @@ function htmlToPlain(input: string | null | undefined): string {
   return input.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
 }
 
-
 type Params = { id: string };
-type Ctx = { params: Promise<Params> };
 
-export async function GET(req: NextRequest, ctx: Ctx) {
-  const { session } = await requireAPIAuth();
-
-  const { id } = await ctx.params;
+export const GET = defineRoute<Params>({ perm: "teacherList.manage" }, async (req, { params, user }) => {
+  const { id } = params;
 
   const { searchParams } = new URL(req.url);
   const withAnswers = searchParams.get("withAnswers") === "1";
@@ -170,7 +162,7 @@ export async function GET(req: NextRequest, ctx: Ctx) {
   const list = await prisma.teacherList.findFirst({
     where: {
       id,
-      teacherId: session?.user.id,
+      teacherId: user.id,
     },
     include: {
       questions: {
@@ -347,4 +339,4 @@ export async function GET(req: NextRequest, ctx: Ctx) {
       "Content-Disposition": `inline; filename="lista-${list.id}.pdf"`,
     },
   });
-}
+});

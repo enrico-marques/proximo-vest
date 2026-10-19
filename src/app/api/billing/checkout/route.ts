@@ -1,22 +1,13 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import Stripe from "stripe";
-import { requireAPIAuth } from "@/utils/access";
+import { defineRoute } from "@/server/auth/define-route";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2025-10-29.clover",
 });
 
-export async function POST(req: Request) {
-  const auth = await requireAPIAuth({
-    emailVerified: true,
-    blockSuspended: true,
-    blockDeleted: true,
-  });
-  if (!auth.ok) return auth.res;
-
-  const { session } = auth;
-
+export const POST = defineRoute({}, async (req, { user }) => {
   const body = await req.json();
   const { planKey, couponCode, interval } = body as {
     planKey?: string;
@@ -62,7 +53,7 @@ export async function POST(req: Request) {
 
   // Buscar assinatura atual do user
   const sub = await prisma.subscription.findUnique({
-    where: { userId: session.user.id },
+    where: { userId: user.id },
   });
 
   // Se já existir stripeCustomerId, usa
@@ -71,15 +62,15 @@ export async function POST(req: Request) {
   // Se ainda não existir, cria um customer novo
   if (!customerId) {
     const customer = await stripe.customers.create({
-      email: session.user.email!,
-      name: session.user.name!,
+      email: user.email,
+      name: user.name,
     });
     customerId = customer.id;
 
     // salvar customerId (e já deixar planKey + billingInterval coerentes)
     if (sub) {
       await prisma.subscription.update({
-        where: { userId: session.user.id },
+        where: { userId: user.id },
         data: {
           stripeCustomerId: customerId,
           planKey: plan.key,
@@ -89,7 +80,7 @@ export async function POST(req: Request) {
     } else {
       await prisma.subscription.create({
         data: {
-          userId: session.user.id,
+          userId: user.id,
           planKey: plan.key,
           status: "ACTIVE", // você pode depois ajustar isso via webhook se quiser
           billingInterval,
@@ -100,7 +91,7 @@ export async function POST(req: Request) {
   } else {
     // Se já tinha subscription e customer, opcionalmente já atualiza o plano/intervalo pretendido
     await prisma.subscription.update({
-      where: { userId: session.user.id },
+      where: { userId: user.id },
       data: {
         planKey: plan.key,
         billingInterval,
@@ -122,13 +113,13 @@ export async function POST(req: Request) {
     cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/assinatura?canceled=true`,
     subscription_data: {
       metadata: {
-        userId: session.user.id,
+        userId: user.id,
         planKey: plan.key,
         billingInterval, // importante pro webhook
       },
     },
     metadata: {
-      userId: session.user.id,
+      userId: user.id,
       planKey: plan.key,
       billingInterval,
     },
@@ -141,4 +132,4 @@ export async function POST(req: Request) {
   const checkout = await stripe.checkout.sessions.create(params);
 
   return NextResponse.json({ url: checkout.url });
-}
+});

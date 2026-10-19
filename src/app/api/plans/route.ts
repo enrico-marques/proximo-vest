@@ -1,20 +1,12 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAPIAuth } from "@/utils/access";
+import { defineRoute } from "@/server/auth/define-route";
 
 /**
  * GET /api/plans/available
  * Lista todos os planos ativos
  */
-export async function GET() {
-  const auth = await requireAPIAuth({
-    emailVerified: true,
-    blockSuspended: true,
-    blockDeleted: true,
-  });
-
-  if (!auth.ok) return auth.res;
-
+export const GET = defineRoute({ perm: ["plan.read", "plan.manage"] }, async () => {
   const plans = await prisma.plan.findMany({
     where: {
       isActive: true,
@@ -26,22 +18,14 @@ export async function GET() {
 
   // Continua devolvendo o próprio objeto Plan do Prisma
   return NextResponse.json(plans);
-}
+});
 
 /**
  * POST /api/plans/available
  * Criação de um novo plano
  * Agora suporta mensal + anual + stripePriceIds
  */
-export async function POST(req: Request) {
-  const auth = await requireAPIAuth({
-    emailVerified: true,
-    blockSuspended: true,
-    blockDeleted: true,
-  });
-
-  if (!auth.ok) return auth.res;
-
+export const POST = defineRoute({ perm: "plan.manage" }, async (req) => {
   const body = await req.json();
 
   const {
@@ -93,4 +77,4 @@ export async function POST(req: Request) {
   });
 
   return NextResponse.json(plan, { status: 201 });
-}
+});

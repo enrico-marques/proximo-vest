@@ -2,7 +2,7 @@ import { prisma } from "../../../../lib/prisma";
 import { NextRequest } from "next/server";
 import { z } from "zod";
 import { json, readBody, tryCatch, badRequest } from "../../_utils";
-import { requireAPIAuth } from "@/utils/access";
+import { defineRoute } from "@/server/auth/define-route";
 
 const Schema = z.object({
   questionId: z.number().int(),
@@ -10,13 +10,7 @@ const Schema = z.object({
   levelsJson: z.record(z.string(), z.string()),
 });
 
-export async function POST(req: NextRequest) {
-    await requireAPIAuth({
-      perm: "rubric.manage",
-       emailVerified: true,
-       blockSuspended: true,
-       blockDeleted: true,
-     });
+export const POST = defineRoute({ perm: "rubric.manage" }, async (req) => {
   return tryCatch(async () => {
     const parsed = Schema.safeParse(await readBody(req));
     if (!parsed.success) return badRequest(parsed.error.message);
@@ -29,4 +23,4 @@ export async function POST(req: NextRequest) {
     const r = await prisma.frRubric.create({ data: { questionId, criterion, levelsJson: levelsJson as any } });
     return json(r, 201);
   });
-}
+});

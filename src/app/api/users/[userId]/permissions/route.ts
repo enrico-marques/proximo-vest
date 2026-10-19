@@ -1,21 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { defineRoute } from "@/server/auth/define-route";
 
 // Body do PUT
 const BodySchema = z.object({
   permissionIds: z.array(z.string()).min(0),
 });
 
-type RouteContext = {
-  params: Promise<{ userId: string }>;
-};
 
-import { requireAPIAuth } from "@/utils/access";
 
 // -------- GET: retorna permissões que o usuário tem diretamente + lista completa --------
-export async function GET(req: NextRequest, context: RouteContext) {
-  await requireAPIAuth({ perm: "user.read", emailVerified: true, blockSuspended: true, blockDeleted: true });
+export const GET = defineRoute<{ userId: string }>({ perm: "user.read" }, async (req, context) => {
   try {
     const { userId } = await context.params;
 
@@ -61,11 +57,10 @@ export async function GET(req: NextRequest, context: RouteContext) {
       { status: 400 }
     );
   }
-}
+});
 
 // -------- PUT: atualiza overrides diretos (UserPermission) --------
-export async function PUT(req: NextRequest, context: RouteContext) {
-  await requireAPIAuth({ perm: "user.access.update", emailVerified: true, blockSuspended: true, blockDeleted: true });
+export const PUT = defineRoute<{ userId: string }>({ perm: "user.access.update" }, async (req, context) => {
   try {
     const { userId } = await context.params;
 
@@ -115,4 +110,4 @@ export async function PUT(req: NextRequest, context: RouteContext) {
       { status: 400 }
     );
   }
-}
+});

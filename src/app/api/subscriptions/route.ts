@@ -1,16 +1,9 @@
 // app/api/admin/subscriptions/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAPIAuth } from "@/utils/access";
+import { defineRoute } from "@/server/auth/define-route";
 
-export async function GET(req: Request) {
-  await requireAPIAuth({
-    emailVerified: true,
-    blockSuspended: true,
-    blockDeleted: true,
-    // requiredRoles: ["ADMIN"], // encaixa com seu sistema depois
-  });
-
+export const GET = defineRoute({ perm: ["subscription.read", "subscription.manage"] }, async (req) => {
   const { searchParams } = new URL(req.url);
   const q = searchParams.get("q")?.trim() || "";
   const status = searchParams.get("status") || "";
@@ -70,4 +63,4 @@ export async function GET(req: Request) {
   });
 
   return NextResponse.json(subscriptions);
-}
+});
