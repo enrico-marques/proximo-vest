@@ -1,6 +1,8 @@
 import Stripe from "stripe";
 import { NextResponse } from "next/server";
+import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
+import { defineRoute } from "@/server/auth/define-route";
 
 export const runtime = "nodejs";
 
@@ -35,29 +37,7 @@ function resolveBillingIntervalFromStripeSub(rawSub: any): BillingInterval {
   return "MONTH";
 }
 
-export async function POST(req: Request) {
-  const body = await req.text();
-  const signature = req.headers.get("stripe-signature");
-
-  if (!signature) {
-    return new NextResponse("Missing signature", { status: 400 });
-  }
-
-  let event: Stripe.Event;
-
-  try {
-    event = stripe.webhooks.constructEvent(
-      body,
-      signature,
-      process.env.STRIPE_WEBHOOK_SECRET!
-    );
-  } catch (err: any) {
-    console.error("⚠️ Erro webhook:", err.message);
-    return new NextResponse(`Webhook Error: ${err.message}`, { status: 400 });
-  }
-
-  console.log("🔔 Stripe webhook recebido:", event.type);
-
+async function handleEvent(event: Stripe.Event) {
   switch (event.type) {
     //
     // 1) Checkout finalizado com sucesso
@@ -268,6 +248,54 @@ export async function POST(req: Request) {
     default:
       console.log(`Unhandled event type: ${event.type}`);
   }
+}
+
+function isUniqueViolation(err: unknown) {
+  return err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002";
+}
+
+export const POST = defineRoute("public", async (req) => {
+  const body = await req.text();
+  const signature = req.headers.get("stripe-signature");
+
+  if (!signature) {
+    return new NextResponse("Missing signature", { status: 400 });
+  }
+
+  let event: Stripe.Event;
+
+  try {
+    event = stripe.webhooks.constructEvent(
+      body,
+      signature,
+      process.env.STRIPE_WEBHOOK_SECRET!
+    );
+  } catch (err) {
+    console.error("⚠️ Erro webhook:", err);
+    return new NextResponse("Webhook Error: invalid signature", { status: 400 });
+  }
+
+  console.log("🔔 Stripe webhook recebido:", event.type);
+
+  // Stripe delivers at least once. Claiming the event id first makes concurrent or
+  // repeated deliveries no-ops; the claim is released on failure so Stripe can retry.
+  try {
+    await prisma.processedStripeEvent.create({
+      data: { id: event.id, type: event.type },
+    });
+  } catch (err) {
+    if (isUniqueViolation(err)) {
+      return NextResponse.json({ received: true, duplicate: true });
+    }
+    throw err;
+  }
+
+  try {
+    await handleEvent(event);
+  } catch (err) {
+    await prisma.processedStripeEvent.delete({ where: { id: event.id } });
+    throw err;
+  }
 
   return NextResponse.json({ received: true });
-}
+});

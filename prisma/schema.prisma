@@ -514,3 +514,12 @@ model TeacherListQuestion {
   @@index([listId])
   @@index([questionId])
 }
+
+// ========== Stripe ==========
+
+/// Stripe event ids already handled by the webhook (idempotency).
+model ProcessedStripeEvent {
+  id          String   @id // evt_...
+  type        String
+  processedAt DateTime @default(now())
+}
