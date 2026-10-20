@@ -41,8 +41,7 @@ jobs:
           node-version: 24
           cache: npm
 
-      # --legacy-peer-deps until the dependency update removes the React 18-only editor.
-      - run: npm ci --legacy-peer-deps
+      - run: npm ci
 
       - name: Typecheck
         run: npx tsc --noEmit
