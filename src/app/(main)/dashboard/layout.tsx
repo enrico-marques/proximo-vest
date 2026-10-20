@@ -22,9 +22,8 @@ import {
   type NavbarStyle,
 } from "@/types/preferences/layout";
 
-import { AccountSwitcher } from "./_components/sidebar/account-switcher";
+import { AccountMenu } from "./_components/sidebar/account-menu";
 import { LayoutControls } from "./_components/sidebar/layout-controls";
-import { SearchDialog } from "./_components/sidebar/search-dialog";
 import { ThemeSwitcher } from "./_components/sidebar/theme-switcher";
 import { AuthProfileProvider } from "@/contexts/auth-profile-context";
 
@@ -37,18 +36,6 @@ export default async function Layout({
     blockDeleted: true,
   });
 
-  const user = [
-    {
-      name: session.user.name,
-      email: session.user.email,
-      id: session.user.id,
-      avatar:
-        (session.user.image as string) ||
-        `https://ui-avatars.com/api/?background=black&color=fffff&name=${session.user.name}&size=128`,
-      role: profile.roles,
-    },
-  ];
-  console.log(user)
   const cookieStore = await cookies();
   const defaultOpen = cookieStore.get("sidebar_state")?.value === "true";
 
@@ -83,8 +70,6 @@ export default async function Layout({
     navbarStyle,
   };
 
-  console.log(profile)
-
   return (
     <AuthProfileProvider profile={profile}>
       <SidebarProvider defaultOpen={defaultOpen}>
@@ -114,12 +99,13 @@ export default async function Layout({
                   orientation="vertical"
                   className="mx-2 data-[orientation=vertical]:h-4"
                 />
-                <SearchDialog />
               </div>
               <div className="flex items-center gap-2">
                 <LayoutControls {...layoutPreferences} />
                 <ThemeSwitcher />
-                <AccountSwitcher users={user} />
+                <AccountMenu
+                  user={{ name: session.user.name, email: session.user.email, image: session.user.image }}
+                />
               </div>
             </div>
           </header>
