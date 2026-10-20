@@ -10,6 +10,7 @@
     "lint": "eslint",
     "postinstall": "prisma generate",
     "db:seed": "prisma db seed",
+    "admin:grant": "node prisma/scripts/grant-admin.mts",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test"

@@ -12,13 +12,15 @@ Requisitos: Node.js 24 e um banco Postgres.
 
 ```bash
 npm install                 # também gera o Prisma Client
-cp .env.example .env.local  # preencha os valores
+cp .env.example .env        # preencha os valores (o CLI do Prisma lê só o .env)
 npx prisma migrate deploy   # aplica as migrations
 npm run db:seed             # permissões, papéis (Admin, Professor) e planos iniciais
 npm run dev
+# cadastre-se em http://localhost:3000/auth/register e depois:
+npm run admin:grant -- seu@email.com   # vira Admin com todas as permissões
 ```
 
-Papéis são atribuídos pelo admin, em **Usuários**. O seed concede `plan`, `subscription` e `coupon.manage` ao papel Admin e `teacherList.manage` ao papel Professor, sem revogar permissões existentes.
+O primeiro admin sai do `admin:grant`, que também marca o e-mail como verificado (útil sem o Resend configurado). Depois disso, papéis são atribuídos pelo admin, em **Usuários**. O seed concede `plan`, `subscription` e `coupon.manage` ao papel Admin e `teacherList.manage` ao papel Professor, sem revogar permissões existentes.
 
 ## Scripts
 
@@ -30,6 +32,7 @@ Papéis são atribuídos pelo admin, em **Usuários**. O seed concede `plan`, `s
 | `npm test` | Testes unitários (Vitest) |
 | `npm run test:e2e` | Testes de ponta a ponta (Playwright) |
 | `npm run db:seed` | Seed de permissões, papéis e planos (os planos só se a tabela estiver vazia) |
+| `npm run admin:grant -- email` | Torna um usuário já cadastrado Admin com todas as permissões |
 
 ## Testes
 
