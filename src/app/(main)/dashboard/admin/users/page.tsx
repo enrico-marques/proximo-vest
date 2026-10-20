@@ -8,6 +8,7 @@ import { SectionCards } from "./_components/section-cards";
 
 export default async function Page() {
   await requirePageAuth({
+    perm: "user.read",
     emailVerified: true,
     blockSuspended: true,
     blockDeleted: true,
