@@ -1,7 +1,7 @@
 // app/api/teacher-lists/questions/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import type { Prisma } from "@/generated/prisma";
+import type { Prisma } from "@/generated/prisma/client";
 import { defineRoute } from "@/server/auth/define-route";
 
 // opcional: força runtime node

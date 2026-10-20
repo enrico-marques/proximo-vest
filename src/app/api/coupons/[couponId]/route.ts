@@ -1,7 +1,7 @@
 // app/api/admin/coupons/[couponId]/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import type { CouponType, CouponTarget } from "@/generated/prisma";
+import type { CouponType, CouponTarget } from "@/generated/prisma/client";
 import { defineRoute } from "@/server/auth/define-route";
 
 

@@ -8,7 +8,7 @@ import {
   CardContent,
 } from "@/components/ui/card";
 import { notFound } from "next/navigation";
-import type { Subscription, Plan, User } from "@/generated/prisma";
+import type { Subscription, Plan, User } from "@/generated/prisma/client";
 import { AdminSubscriptionForm } from "./_components/admin-subscription-form";
 import { headers } from "next/headers";
 

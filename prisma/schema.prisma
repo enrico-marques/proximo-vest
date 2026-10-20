@@ -11,8 +11,10 @@ datasource db {
 
 // Define custom output path for generated Prisma Client
 generator client {
-  provider = "prisma-client-js"
+  provider = "prisma-client"
   output   = "../src/generated/prisma"
+  // Explicit .ts extensions let Node run scripts (seeds) against the client without a build step.
+  importFileExtension = "ts"
 }
 
 // ========== Enums ==========

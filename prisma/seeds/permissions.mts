@@ -1,6 +1,7 @@
-require('dotenv').config();
-const { PrismaPg } = require('@prisma/adapter-pg');
-const { PrismaClient } = require('../../src/generated/prisma');
+import "dotenv/config";
+import { PrismaPg } from "@prisma/adapter-pg";
+
+import { PrismaClient } from "../../src/generated/prisma/client.ts";
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
 const prisma = new PrismaClient({ adapter });
@@ -69,12 +70,12 @@ const permissions = [
 ];
 
 // Grants applied on top of whatever was configured through the admin UI; never revokes.
-const roleGrants = {
+const roleGrants: Record<string, string[]> = {
   Admin: ["plan.manage", "subscription.manage", "coupon.manage"],
   Professor: ["teacherList.manage"],
 };
 
-async function findOrCreateRole(name) {
+async function findOrCreateRole(name: string) {
   // Role names were typed by hand in the admin UI, so match case-insensitively.
   const existing = await prisma.role.findFirst({
     where: { name: { equals: name, mode: "insensitive" } },

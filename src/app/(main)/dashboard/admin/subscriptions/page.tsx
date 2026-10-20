@@ -10,7 +10,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import type { Subscription, Plan, User } from "@/generated/prisma";
+import type { Subscription, Plan, User } from "@/generated/prisma/client";
 import { headers } from "next/headers";
 
 export const dynamic = "force-dynamic";

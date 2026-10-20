@@ -1,6 +1,6 @@
 import { requirePageAuth } from "@/utils/access";
 import { isActiveSubscription } from "@/server/subscription";
-import type { Plan } from "@/generated/prisma";
+import type { Plan } from "@/generated/prisma/client";
 import { SubscribeButton } from "@/components/billing/subscribe-button";
 import { ManageSubscriptionButton } from "@/components/billing/manage-subscription-button";
 import {

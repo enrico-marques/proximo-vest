@@ -11,7 +11,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { CouponType } from "@/generated/prisma"; // ⬅ IMPORTANTE
+import { CouponType } from "@/generated/prisma/client";
 
 export const dynamic = "force-dynamic";
 

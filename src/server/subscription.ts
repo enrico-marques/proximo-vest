@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { Plan, Subscription } from "../generated/prisma";
+import type { Plan, Subscription } from "@/generated/prisma/client";
 
 // Status como string union (banco guarda string)
 export type SubscriptionStatus =
