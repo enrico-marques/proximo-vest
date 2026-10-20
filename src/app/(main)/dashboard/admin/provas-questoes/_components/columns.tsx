@@ -1,6 +1,6 @@
 "use client";
 
-import { ColumnDef } from "@tanstack/react-table";
+import type { DataTableColumnDef } from "@/components/data-table/use-data-table";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 
@@ -65,7 +65,7 @@ async function handleEdit(id: number, data: { name: any }) {
   }
 }
 
-export const dashboardColumns: ColumnDef<z.infer<typeof sectionSchema>>[] = [
+export const dashboardColumns: DataTableColumnDef<z.infer<typeof sectionSchema>>[] = [
   {
     accessorKey: "name",
     header: ({ column }) => (

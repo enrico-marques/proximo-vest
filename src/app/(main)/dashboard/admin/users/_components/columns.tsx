@@ -1,4 +1,4 @@
-import { ColumnDef } from "@tanstack/react-table";
+import type { DataTableColumnDef } from "@/components/data-table/use-data-table";
 import { CircleCheck, Loader, EllipsisVertical } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -29,7 +29,7 @@ import { DataTableColumnHeader } from "../../../../../../components/data-table/d
 import { sectionSchema } from "./schema";
 import { TableCellViewer } from "./table-cell-viewer";
 
-export const dashboardColumns: ColumnDef<z.infer<typeof sectionSchema>>[] = [
+export const dashboardColumns: DataTableColumnDef<z.infer<typeof sectionSchema>>[] = [
   {
     accessorKey: "header",
     header: ({ column }) => (

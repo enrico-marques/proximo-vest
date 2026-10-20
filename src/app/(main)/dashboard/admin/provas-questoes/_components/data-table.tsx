@@ -2,22 +2,8 @@
 
 import * as React from "react";
 
-import {
-  ColumnDef,
-  flexRender,
-  getCoreRowModel,
-  getFilteredRowModel,
-  getFacetedRowModel,
-  getFacetedUniqueValues,
-  getPaginationRowModel,
-  getSortedRowModel,
-  useReactTable,
-  type ColumnFiltersState,
-  type PaginationState,
-  type RowSelectionState,
-  type SortingState,
-  type VisibilityState,
-} from "@tanstack/react-table";
+import { flexRender } from "@tanstack/react-table";
+import { type DataTableColumnDef, useDataTable } from "@/components/data-table/use-data-table";
 
 import { Plus } from "lucide-react";
 import { z } from "zod";
@@ -47,49 +33,19 @@ export function DataTable({ data }: DataTableProps) {
     perm: "examBoard.manage",
   });
 
-  const [sorting, setSorting] = React.useState<SortingState>([]);
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
-    []
-  );
-  const [columnVisibility, setColumnVisibility] =
-    React.useState<VisibilityState>({});
-  const [rowSelection, setRowSelection] = React.useState<RowSelectionState>({});
-  const [pagination, setPagination] = React.useState<PaginationState>({
-    pageIndex: 0,
-    pageSize: 10,
-  });
-
-  const columns = React.useMemo<ColumnDef<Section, unknown>[]>(
+  const columns = React.useMemo<DataTableColumnDef<Section, unknown>[]>(
     () => dashboardColumns,
     []
   );
 
-  const table = useReactTable({
+  const table = useDataTable({
     data,
     columns,
-    state: {
-      sorting,
-      columnFilters,
-      columnVisibility,
-      rowSelection,
-      pagination,
-    },
-    onSortingChange: setSorting,
-    onColumnFiltersChange: setColumnFilters,
-    onColumnVisibilityChange: setColumnVisibility,
-    onRowSelectionChange: setRowSelection,
-    onPaginationChange: setPagination,
-    getCoreRowModel: getCoreRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    getFacetedRowModel: getFacetedRowModel(),
-    getFacetedUniqueValues: getFacetedUniqueValues(),
     getRowId: (row) => row.id.toString(),
   });
 
-  const pageIndex = table.getState().pagination.pageIndex;
-  const pageSize = table.getState().pagination.pageSize;
+  const pageIndex = table.state.pagination.pageIndex;
+  const pageSize = table.state.pagination.pageSize;
   const pageCount = table.getPageCount();
 
   return (

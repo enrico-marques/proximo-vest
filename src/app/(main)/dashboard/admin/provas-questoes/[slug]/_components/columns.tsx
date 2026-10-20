@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { ColumnDef } from "@tanstack/react-table";
+import type { DataTableColumnDef } from "@/components/data-table/use-data-table";
 import { EllipsisVertical } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -70,7 +70,7 @@ async function handleEdit(
   }
 }
 
-export function getDashboardColumns(slug: string): ColumnDef<Section>[] {
+export function getDashboardColumns(slug: string): DataTableColumnDef<Section>[] {
   return [
     {
       accessorKey: "year",

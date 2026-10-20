@@ -1,4 +1,4 @@
-import { ColumnDef } from "@tanstack/react-table";
+import type { DataTableColumnDef } from "@/components/data-table/use-data-table";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import {
@@ -66,7 +66,7 @@ async function handleEdit(id: number, data: { name: any }) {
 export const getdashboardColumns = (
   slug: string,
   id: string
-): ColumnDef<z.infer<typeof sectionSchema>>[] => [
+): DataTableColumnDef<z.infer<typeof sectionSchema>>[] => [
   {
     accessorKey: "phaseNumber",
     header: ({ column }) => (

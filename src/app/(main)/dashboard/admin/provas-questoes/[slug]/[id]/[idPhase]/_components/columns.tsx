@@ -1,4 +1,4 @@
-import { ColumnDef } from "@tanstack/react-table";
+import type { DataTableColumnDef } from "@/components/data-table/use-data-table";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import {
@@ -44,7 +44,7 @@ export const getdashboardColumns = (
   slug: string,
   id: string,
   idPhase: string
-): ColumnDef<Question>[] => [
+): DataTableColumnDef<Question>[] => [
   // Número da questão com link
   {
     accessorKey: "numberLabel",
