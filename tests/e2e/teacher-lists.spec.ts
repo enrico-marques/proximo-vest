@@ -32,13 +32,30 @@ test.describe("teacher lists", () => {
   });
 
   test("another teacher's list is not found, including its PDF", async () => {
-    for (const path of ["", "/pdf", "/duplicate"]) {
-      const res = await teacher.get(`/api/teacher-lists/${E2E_OTHER_TEACHER.listId}${path}`);
-      expect(res.status(), path || "/").toBe(404);
+    const base = `/api/teacher-lists/${E2E_OTHER_TEACHER.listId}`;
+    for (const res of [
+      await teacher.get(base),
+      await teacher.get(`${base}/pdf`),
+      await teacher.post(`${base}/duplicate`),
+    ]) {
+      expect(res.status(), res.url()).toBe(404);
     }
   });
 
   test("a student without the Professor role cannot use teacher lists", async () => {
     expect((await student.get("/api/teacher-lists")).status()).toBe(403);
+  });
+
+  // Runs last: it adds a list. The teacher has no subscription, so the default teacher plan
+  // from the seed applies (5 lists per month).
+  test("a teacher on the default plan can duplicate a list until the monthly limit", async () => {
+    const duplicate = () => teacher.post(`/api/teacher-lists/${E2E_TEACHER.listId}/duplicate`);
+
+    for (let i = 0; i < 5; i++) {
+      expect((await duplicate()).status()).toBe(201);
+    }
+    const blocked = await duplicate();
+    expect(blocked.status()).toBe(403);
+    expect((await blocked.json()).error.message).toContain("limite");
   });
 });

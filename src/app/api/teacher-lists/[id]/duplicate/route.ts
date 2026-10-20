@@ -2,10 +2,11 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { defineRoute } from "@/server/auth/define-route";
+import { consumeUsage } from "@/server/limits";
 
 type Params = { id: string };
 
-export const GET = defineRoute<Params>({ perm: "teacherList.manage" }, async (_req, { params, user }) => {
+export const POST = defineRoute<Params>({ perm: "teacherList.manage" }, async (_req, { params, user }) => {
   const { id } = params;
 
   const list = await prisma.teacherList.findFirst({
@@ -25,6 +26,8 @@ export const GET = defineRoute<Params>({ perm: "teacherList.manage" }, async (_r
   }
 
   const duplicated = await prisma.$transaction(async (tx) => {
+    await consumeUsage(user.id, "TEACHER_LIST", tx);
+
     const newList = await tx.teacherList.create({
       data: {
         name: `${list.name} (cópia)`,

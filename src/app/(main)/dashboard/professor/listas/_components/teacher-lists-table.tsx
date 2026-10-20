@@ -37,6 +37,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { MoreHorizontal, Plus } from "lucide-react";
+import { readApiError } from "@/lib/api-error";
 
 type TeacherListDTO = {
   id: string;
@@ -81,9 +82,7 @@ export function TeacherListsTable() {
       });
 
       if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        const msg = body?.error ?? "Erro ao duplicar lista.";
-        throw new Error(msg);
+        throw new Error(await readApiError(res, "Erro ao duplicar lista."));
       }
 
       toast.success("Lista duplicada com sucesso.");
@@ -101,9 +100,7 @@ export function TeacherListsTable() {
       });
 
       if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        const msg = body?.error ?? "Erro ao excluir lista.";
-        throw new Error(msg);
+        throw new Error(await readApiError(res, "Erro ao excluir lista."));
       }
 
       toast.success("Lista excluída.");

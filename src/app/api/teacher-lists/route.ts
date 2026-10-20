@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { defineRoute } from "@/server/auth/define-route";
+import { consumeUsage } from "@/server/limits";
 
 const createTeacherListSchema = z.object({
   name: z.string().min(3, "Nome muito curto"),
@@ -50,6 +51,8 @@ export const POST = defineRoute({ perm: "teacherList.manage" }, async (req, { us
   const { name, description, teacherName, questionIds } = parsed.data;
 
   const created = await prisma.$transaction(async (tx) => {
+    await consumeUsage(user.id, "TEACHER_LIST", tx);
+
     const list = await tx.teacherList.create({
       data: {
         name,

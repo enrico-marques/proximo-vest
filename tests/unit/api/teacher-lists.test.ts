@@ -1,8 +1,11 @@
 import { NextRequest } from "next/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { HttpError } from "@/server/auth/define-route";
+
 const getSession = vi.fn();
 const getAuthProfile = vi.fn();
+const consumeUsage = vi.fn();
 const db = {
   teacherList: {
     findMany: vi.fn(),
@@ -18,6 +21,7 @@ const db = {
 vi.mock("@/lib/auth", () => ({ auth: { api: { getSession: (...a: unknown[]) => getSession(...a) } } }));
 vi.mock("@/utils/access", () => ({ getAuthProfile: (...a: unknown[]) => getAuthProfile(...a) }));
 vi.mock("@/lib/prisma", () => ({ prisma: db }));
+vi.mock("@/server/limits", () => ({ consumeUsage: (...a: unknown[]) => consumeUsage(...a) }));
 
 const lists = await import("@/app/api/teacher-lists/route");
 const list = await import("@/app/api/teacher-lists/[id]/route");
@@ -82,13 +86,27 @@ describe("teacher lists authorization", () => {
     expect(db.teacherList.create).toHaveBeenCalledWith({
       data: expect.objectContaining({ teacherId: TEACHER.id }),
     });
+    expect(consumeUsage).toHaveBeenCalledWith(TEACHER.id, "TEACHER_LIST", db);
+  });
+
+  it("does not create a list once the plan limit is reached", async () => {
+    signedIn();
+    consumeUsage.mockRejectedValue(new HttpError(403, "limite"));
+
+    const res = await lists.POST(
+      request("POST", { name: "Lista 6", teacherName: "Prof", questionIds: [1] }),
+      noParams,
+    );
+
+    expect(res.status).toBe(403);
+    expect(db.teacherList.create).not.toHaveBeenCalled();
   });
 
   it.each([
     ["GET", () => list.GET(request(), params({ id: "other" }))],
     ["PUT", () => list.PUT(request("PUT", { name: "Hack" }), params({ id: "other" }))],
     ["DELETE", () => list.DELETE(request("DELETE"), params({ id: "other" }))],
-    ["duplicate", () => duplicate.GET(request(), params({ id: "other" }))],
+    ["duplicate", () => duplicate.POST(request("POST"), params({ id: "other" }))],
   ])("%s on another teacher's list is a 404 and changes nothing", async (_name, call) => {
     signedIn();
     db.teacherList.findFirst.mockResolvedValue(null);
