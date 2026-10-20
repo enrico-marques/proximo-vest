@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -10,18 +11,20 @@ import { type AuthProfile, type PermissionKey, type RoleName, can } from "./acce
 // SESSÃO (Server only)
 // ============================================================================
 
-export async function getSessionOrNull() {
+// Memoized per request: the dashboard layout and its page both need the session and profile,
+// and every lookup is a billed database operation.
+export const getSessionOrNull = cache(async () => {
   const hdrs = Object.fromEntries((await headers()).entries());
   return auth.api.getSession({ headers: hdrs });
-}
+});
 
 // ============================================================================
 // CARREGA PERFIL DE AUTORIZAÇÃO (Server only)
 // ============================================================================
 
-export async function getAuthProfile(
+export const getAuthProfile = cache(async (
   userId: string
-): Promise<AuthProfile | null> {
+): Promise<AuthProfile | null> => {
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: {
@@ -92,7 +95,7 @@ export async function getAuthProfile(
     roles: roleNames,
     perms: permsArray,
   };
-}
+});
 
 // ============================================================================
 // REQUIRE PAGE AUTH (Server only)
