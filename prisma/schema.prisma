@@ -354,6 +354,16 @@ model Verification {
   @@map("verification")
 }
 
+/// better-auth rate limit counters (rateLimit.storage = "database"), shared by all instances.
+model RateLimit {
+  id          String @id
+  key         String @unique
+  count       Int
+  lastRequest BigInt
+
+  @@map("rateLimit")
+}
+
 model Role {
   id          String  @id @default(cuid())
   name        String  @unique // "admin", "editor"

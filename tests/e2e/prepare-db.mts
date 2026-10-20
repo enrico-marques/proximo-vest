@@ -55,6 +55,8 @@ async function prepareDatabase() {
     // sessions, accounts, role links, teacher lists and the board's questions.
     const users = [E2E_USER, E2E_TEACHER, E2E_OTHER_TEACHER, E2E_ADMIN];
     await prisma.user.deleteMany({ where: { email: { in: users.map((u) => u.email) } } });
+    // Rate-limit counters survive between runs; start every run with a clean slate.
+    await prisma.rateLimit.deleteMany();
     await prisma.examBoard.deleteMany({ where: { slug: { startsWith: E2E_BOARD_SLUG } } });
 
     const professor = await prisma.role.findFirstOrThrow({
