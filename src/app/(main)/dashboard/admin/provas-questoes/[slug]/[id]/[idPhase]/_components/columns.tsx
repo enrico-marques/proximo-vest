@@ -1,4 +1,4 @@
-import type { DataTableColumnDef } from "@/components/data-table/use-data-table";
+import type { DataTableColumnDef, DataTableRow } from "@/components/data-table/use-data-table";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import {
@@ -40,167 +40,169 @@ async function handleDelete(itemId: number) {
   }
 }
 
-export const getdashboardColumns = (
-  slug: string,
-  id: string,
-  idPhase: string
-): DataTableColumnDef<Question>[] => [
-  // Número da questão com link
-  {
-    accessorKey: "numberLabel",
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Questão" />
-    ),
-    cell: ({ row }) => {
-      return (
-        <a
-          className="underline-offset-2 hover:underline"
-          href={`/dashboard/admin/provas-questoes/${slug}/${id}/${idPhase}/${row.original.id}/preview`}
-        >
-          <Label>Q{row.original.numberLabel}</Label>
-        </a>
-      );
-    },
-    enableSorting: false,
-  },
+function RowActions({ row, slug, id, idPhase }: { row: DataTableRow<Question>; slug: string; id: string; idPhase: string }) {
 
-  // Tipo: objetiva/discursiva
-  {
-    accessorKey: "isDiscursive",
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Tipo" />
-    ),
-    cell: ({ row }) => (
-      <div className="w-32">
-        <Badge variant="outline" className="text-muted-foreground px-1.5">
-          {row.original.isDiscursive ? "Discursiva" : "Objetiva"}
-        </Badge>
-      </div>
-    ),
-    enableSorting: false,
-  },
+  const [isDialogOpen, setIsDialogOpen] = React.useState(false);
+  const [isEditOpen, setIsEditOpen] = React.useState(false);
 
-  // Dificuldade
-  {
-    accessorKey: "difficulty",
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Dificuldade" />
-    ),
-    cell: ({ row }) => (
-      <div className="w-32">
-        <Label>{row.original.difficulty ?? "-"}</Label>
-      </div>
-    ),
-    enableSorting: false,
-  },
+  const item = row.original;
 
-  // Status
-  {
-    accessorKey: "status",
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Status" />
-    ),
-    cell: ({ row }) => (
-      <div className="w-32">
-        <Badge variant="secondary" className="px-1.5">
-          {row.original.status}
-        </Badge>
-      </div>
-    ),
-    enableSorting: false,
-  },
-
-  // Criada em
-  {
-    accessorKey: "createdAt",
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Criada em" />
-    ),
-    cell: ({ row }) => {
-      const date = new Date(row.original.createdAt);
-      const formatted = isNaN(date.getTime())
-        ? "-"
-        : date.toLocaleDateString("pt-BR", {
-            day: "2-digit",
-            month: "2-digit",
-            year: "numeric",
-          });
-      return (
-        <div className="w-32">
-          <Label>{formatted}</Label>
-        </div>
-      );
-    },
-    enableSorting: false,
-  },
-
-  // Ações
-  {
-    accessorKey: "actions",
-    header: () => <div className="text-right pr-4">Ações</div>,
-    cell: ({ row }) => {
-  
-      const [isDialogOpen, setIsDialogOpen] = React.useState(false);
-      const [isEditOpen, setIsEditOpen] = React.useState(false);
-
-      const item = row.original;
-
-      return (
-        <div className="flex justify-end items-center gap-2 pr-4">
-          {/* Botão que abre o modal de edição */}
-            <Link
-          href={`/dashboard/admin/provas-questoes/${slug}/${id}/${idPhase}/${item.id}/edit`}
-        >
-          <Button
-            variant="outline"
-            size="sm"
-       
-          >
-            Editar
-          </Button>
+  return (
+    <div className="flex justify-end items-center gap-2 pr-4">
+      {/* Botão que abre o modal de edição */}
+        <Link
+      href={`/dashboard/admin/provas-questoes/${slug}/${id}/${idPhase}/${item.id}/edit`}
+    >
+      <Button
+        variant="outline"
+        size="sm"
+   
+      >
+        Editar
+      </Button>
  </Link>
-       
-     
-          {/* Botão de deletar */}
-          <Button
-            variant="destructive"
-            size="sm"
-            onClick={() => setIsDialogOpen(true)}
-          >
-            Deletar
-          </Button>
+   
+ 
+      {/* Botão de deletar */}
+      <Button
+        variant="destructive"
+        size="sm"
+        onClick={() => setIsDialogOpen(true)}
+      >
+        Deletar
+      </Button>
 
-          {/* Modal de confirmação de delete */}
-          <AlertDialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>
-                  Tem certeza que deseja deletar esta questão?
-                </AlertDialogTitle>
-                <AlertDialogDescription>
-                  Esta ação não pode ser desfeita. Isso irá deletar
-                  permanentemente a questão e seus dados associados.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
+      {/* Modal de confirmação de delete */}
+      <AlertDialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Tem certeza que deseja deletar esta questão?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação não pode ser desfeita. Isso irá deletar
+              permanentemente a questão e seus dados associados.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
 
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
 
-                <AlertDialogAction
-                  className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
-                  onClick={async () => {
-                    await handleDelete(item.id);
-                    setIsDialogOpen(false);
-                  }}
-                >
-                  Deletar
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </div>
-      );
-    },
-    enableSorting: false,
-  },
+            <AlertDialogAction
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+              onClick={async () => {
+                await handleDelete(item.id);
+                setIsDialogOpen(false);
+              }}
+            >
+              Deletar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+}
+
+export const getdashboardColumns = (
+slug: string,
+id: string,
+idPhase: string
+): DataTableColumnDef<Question>[] => [
+// Número da questão com link
+{
+accessorKey: "numberLabel",
+header: ({ column }) => (
+  <DataTableColumnHeader column={column} title="Questão" />
+),
+cell: ({ row }) => {
+  return (
+    <a
+      className="underline-offset-2 hover:underline"
+      href={`/dashboard/admin/provas-questoes/${slug}/${id}/${idPhase}/${row.original.id}/preview`}
+    >
+      <Label>Q{row.original.numberLabel}</Label>
+    </a>
+  );
+},
+enableSorting: false,
+},
+
+// Tipo: objetiva/discursiva
+{
+accessorKey: "isDiscursive",
+header: ({ column }) => (
+  <DataTableColumnHeader column={column} title="Tipo" />
+),
+cell: ({ row }) => (
+  <div className="w-32">
+    <Badge variant="outline" className="text-muted-foreground px-1.5">
+      {row.original.isDiscursive ? "Discursiva" : "Objetiva"}
+    </Badge>
+  </div>
+),
+enableSorting: false,
+},
+
+// Dificuldade
+{
+accessorKey: "difficulty",
+header: ({ column }) => (
+  <DataTableColumnHeader column={column} title="Dificuldade" />
+),
+cell: ({ row }) => (
+  <div className="w-32">
+    <Label>{row.original.difficulty ?? "-"}</Label>
+  </div>
+),
+enableSorting: false,
+},
+
+// Status
+{
+accessorKey: "status",
+header: ({ column }) => (
+  <DataTableColumnHeader column={column} title="Status" />
+),
+cell: ({ row }) => (
+  <div className="w-32">
+    <Badge variant="secondary" className="px-1.5">
+      {row.original.status}
+    </Badge>
+  </div>
+),
+enableSorting: false,
+},
+
+// Criada em
+{
+accessorKey: "createdAt",
+header: ({ column }) => (
+  <DataTableColumnHeader column={column} title="Criada em" />
+),
+cell: ({ row }) => {
+  const date = new Date(row.original.createdAt);
+  const formatted = isNaN(date.getTime())
+    ? "-"
+    : date.toLocaleDateString("pt-BR", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      });
+  return (
+    <div className="w-32">
+      <Label>{formatted}</Label>
+    </div>
+  );
+},
+enableSorting: false,
+},
+
+// Ações
+{
+accessorKey: "actions",
+header: () => <div className="text-right pr-4">Ações</div>,
+cell: ({ row }) => <RowActions row={row} slug={slug} id={id} idPhase={idPhase} />,
+enableSorting: false,
+},
 ];

@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 
 import { flexRender } from "@tanstack/react-table";
 import { type DataTableColumnDef, useDataTable } from "@/components/data-table/use-data-table";
@@ -57,10 +58,10 @@ export function DataTable({ data }: DataTableProps) {
         {canCreate && (
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" asChild>
-              <a href="/dashboard/admin/provas-questoes/createBoard">
+              <Link href="/dashboard/admin/provas-questoes/createBoard">
                 <Plus className="mr-1 h-4 w-4" />
                 <span className="hidden lg:inline">Criar Prova</span>
-              </a>
+              </Link>
             </Button>
           </div>
         )}

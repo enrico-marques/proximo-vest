@@ -97,7 +97,7 @@ export default async function MinhaContaPage() {
           <div className="flex flex-col">
             <h1 className="text-2xl font-semibold tracking-tight flex items-center gap-2">
               Minha conta
-              <Badge variant={statusVariant as any}>{statusLabel}</Badge>
+              <Badge variant={statusVariant}>{statusLabel}</Badge>
             </h1>
             <p className="text-sm text-muted-foreground flex items-center gap-2">
               <Mail className="h-4 w-4" />
@@ -129,7 +129,7 @@ export default async function MinhaContaPage() {
                   Informações principais do seu usuário.
                 </CardDescription>
               </div>
-              <Badge variant={statusVariant as any}>{statusLabel}</Badge>
+              <Badge variant={statusVariant}>{statusLabel}</Badge>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid gap-4 sm:grid-cols-2">
@@ -179,7 +179,7 @@ export default async function MinhaContaPage() {
                     Status da conta
                   </p>
                   <p className="text-sm">
-                    <Badge variant={statusVariant as any}>{statusLabel}</Badge>
+                    <Badge variant={statusVariant}>{statusLabel}</Badge>
                   </p>
                 </div>
               </div>
@@ -249,7 +249,7 @@ export default async function MinhaContaPage() {
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Status da conta</span>
-                <Badge variant={statusVariant as any}>{statusLabel}</Badge>
+                <Badge variant={statusVariant}>{statusLabel}</Badge>
               </div>
 
               <Separator className="my-2" />

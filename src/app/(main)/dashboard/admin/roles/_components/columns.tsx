@@ -1,6 +1,6 @@
 "use client";
 
-import type { DataTableColumnDef } from "@/components/data-table/use-data-table";
+import type { DataTableColumnDef, DataTableRow } from "@/components/data-table/use-data-table";
 import { EllipsisVertical } from "lucide-react";
 import { z } from "zod";
 import { useRouter } from "next/navigation";
@@ -22,6 +22,41 @@ import { roleCreateSchema } from "./schema";
 type RoleRow = z.infer<typeof roleCreateSchema> & {
   id: string;
 };
+
+function RowActions({ row }: { row: DataTableRow<RoleRow> }) {
+  const router = useRouter();
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="ghost"
+          className="data-[state=open]:bg-muted text-muted-foreground flex size-8"
+          size="icon"
+        >
+          <EllipsisVertical />
+          <span className="sr-only">Open menu</span>
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-40">
+        {/* Exemplo de ações */}
+        <DropdownMenuItem
+          onClick={() =>
+            router.push(`/dashboard/admin/roles/${row.original.id}/permissions`)
+          }
+        >
+          Editar permissões
+        </DropdownMenuItem>
+
+        <DropdownMenuSeparator />
+
+        <DropdownMenuItem className="text-destructive focus:text-destructive">
+          Deletar
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
 
 export const dashboardColumns: DataTableColumnDef<RoleRow>[] = [
   {
@@ -55,40 +90,7 @@ export const dashboardColumns: DataTableColumnDef<RoleRow>[] = [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Ações" />
     ),
-    cell: ({ row }) => {
-      const router = useRouter(); // hook tem que ficar aqui dentro
-
-      return (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              className="data-[state=open]:bg-muted text-muted-foreground flex size-8"
-              size="icon"
-            >
-              <EllipsisVertical />
-              <span className="sr-only">Open menu</span>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-40">
-            {/* Exemplo de ações */}
-            <DropdownMenuItem
-              onClick={() =>
-                router.push(`/dashboard/admin/roles/${row.original.id}/permissions`)
-              }
-            >
-              Editar permissões
-            </DropdownMenuItem>
-
-            <DropdownMenuSeparator />
-
-            <DropdownMenuItem className="text-destructive focus:text-destructive">
-              Deletar
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      );
-    },
+    cell: ({ row }) => <RowActions row={row} />,
     enableSorting: false,
   },
 ];

@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+import { useForm, type Resolver } from "react-hook-form";
 import { z } from "zod";
 import { useState, useMemo, useEffect, useCallback } from "react";
 import dynamic from "next/dynamic";
@@ -42,6 +42,8 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { AlertTriangle } from "lucide-react";
+import { errorMessage } from "@/lib/api-error";
+import { requestTaxonomies } from "@/components/questions/request-taxonomies";
 
 type CreateQuestionFormProps = {
   isDiscursive: boolean;
@@ -121,6 +123,11 @@ const frSchema = baseSchema.extend({
     .min(1, "Informe pelo menos uma resposta modelo"),
 });
 
+// One shape for both question types; the active schema validates only its own fields.
+type QuestionFormValues = z.infer<typeof baseSchema> &
+  Partial<z.infer<typeof mcqSchema>> &
+  Partial<z.infer<typeof frSchema>>;
+
 type TaxonomyCheckResult = {
   missingSubjects: string[];
   missingSkills: string[];
@@ -147,7 +154,7 @@ export function CreateQuestionForm({
   // modal de criação quando algo não existir no BD
   const [taxonomyCheckResult, setTaxonomyCheckResult] =
     useState<TaxonomyCheckResult | null>(null);
-  const [pendingValues, setPendingValues] = useState<any | null>(null);
+  const [pendingValues, setPendingValues] = useState<QuestionFormValues | null>(null);
   const [isTaxonomyModalOpen, setIsTaxonomyModalOpen] = useState(false);
   const [isCreatingTaxonomies, setIsCreatingTaxonomies] = useState(false);
 
@@ -156,8 +163,8 @@ export function CreateQuestionForm({
     [isDiscursive]
   );
 
-  const form = useForm<any>({
-    resolver: zodResolver(schema),
+  const form = useForm<QuestionFormValues>({
+    resolver: zodResolver(schema) as Resolver<QuestionFormValues>,
     defaultValues: {
       examPhaseId,
       numberLabel: "",
@@ -166,7 +173,7 @@ export function CreateQuestionForm({
       stimulusText: "",
       stimulusSourceRef: "",
 
-      optionCount: String(defaultOptionCount ?? 5),
+      optionCount: defaultOptionCount === 4 ? "4" : "5",
       shuffleOptions: true,
       correctOptionKey: "A",
       optionA: "",
@@ -195,33 +202,21 @@ export function CreateQuestionForm({
   };
 
   // ---------------- Carregar subjects/skills da API ----------------
-  const fetchTaxonomies = useCallback(async () => {
-    try {
-      setIsLoadingTaxonomies(true);
-
-      const [subjectsRes, skillsRes] = await Promise.all([
-        fetch("/api/subject/list"),
-        fetch("/api/skill/list"),
-      ]);
-
-      if (!subjectsRes.ok || !skillsRes.ok) {
-        throw new Error("Erro ao carregar subjects/skills.");
-      }
-
-      const subjectsData = (await subjectsRes.json()) as SubjectDTO[];
-      const skillsData = (await skillsRes.json()) as SkillDTO[];
-
-      setSubjectsOptions(subjectsData || []);
-      setSkillsOptions(skillsData || []);
-    } catch (err: any) {
-      console.error(err);
-      toast.error(
-        err.message || "Não foi possível carregar subjects/skills da API."
-      );
-    } finally {
-      setIsLoadingTaxonomies(false);
-    }
-  }, []);
+  // State is only set in promise callbacks, so this can start from an effect.
+  const fetchTaxonomies = useCallback(
+    () =>
+      requestTaxonomies<SubjectDTO, SkillDTO>()
+        .then(({ subjects, skills }) => {
+          setSubjectsOptions(subjects);
+          setSkillsOptions(skills);
+        })
+        .catch((err) => {
+          console.error(err);
+          toast.error(errorMessage(err) || "Não foi possível carregar subjects/skills da API.");
+        })
+        .finally(() => setIsLoadingTaxonomies(false)),
+    [],
+  );
 
   useEffect(() => {
     fetchTaxonomies();
@@ -229,7 +224,7 @@ export function CreateQuestionForm({
 
   // ---------------- Funções de taxonomia (check + create) ----------------
 
-  function checkMissingTaxonomies(values: any): TaxonomyCheckResult | null {
+  function checkMissingTaxonomies(values: QuestionFormValues): TaxonomyCheckResult | null {
     const existingSubjectSlugs = new Set(subjectsOptions.map((s) => s.slug));
     const existingSkillCodes = new Set(
       skillsOptions
@@ -288,10 +283,11 @@ export function CreateQuestionForm({
       ),
     ]);
 
+    setIsLoadingTaxonomies(true);
     await fetchTaxonomies();
   }
 
-  async function createQuestion(values: any) {
+  async function createQuestion(values: QuestionFormValues) {
     const subjectsArray =
       values.subjects && values.subjects.length > 0
         ? (values.subjects as string[])
@@ -308,7 +304,7 @@ export function CreateQuestionForm({
       sourceRef: values.stimulusSourceRef || undefined,
     };
 
-    const payload: any = {
+    const payload: Record<string, unknown> = {
       examPhaseId: values.examPhaseId,
       numberLabel: values.numberLabel,
       isDiscursive,
@@ -379,7 +375,7 @@ export function CreateQuestionForm({
   }
 
   // ---------------- onSubmit com check no BD ----------------
-  async function onSubmit(values: any) {
+  async function onSubmit(values: QuestionFormValues) {
     try {
       setIsSubmitting(true);
 
@@ -394,9 +390,9 @@ export function CreateQuestionForm({
       }
 
       await createQuestion(values);
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
-      toast.error(err.message || "Erro inesperado ao criar questão.");
+      toast.error(errorMessage(err) || "Erro inesperado ao criar questão.");
     } finally {
       setIsSubmitting(false);
     }
@@ -413,7 +409,7 @@ export function CreateQuestionForm({
 
       await createQuestion(pendingValues);
       setPendingValues(null);
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
       toast.error("Erro ao criar novas taxonomias.");
     } finally {
@@ -571,7 +567,7 @@ export function CreateQuestionForm({
                                   className="ml-1 text-[10px]"
                                   onClick={() =>
                                     field.onChange(
-                                      field.value.filter(
+                                      (field.value ?? []).filter(
                                         (s: string) => s !== slug
                                       )
                                     )
@@ -686,7 +682,7 @@ export function CreateQuestionForm({
                                   className="ml-1 text-[10px]"
                                   onClick={() =>
                                     field.onChange(
-                                      field.value.filter(
+                                      (field.value ?? []).filter(
                                         (c: string) => c !== code
                                       )
                                     )

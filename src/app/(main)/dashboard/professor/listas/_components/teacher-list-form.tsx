@@ -16,7 +16,7 @@ import {
   TeacherListInitialData,
 } from "./types";
 import { TeacherListBuildStep } from "./teacher-list-build-step";
-import { readApiError } from "@/lib/api-error";
+import { readApiError, errorMessage } from "@/lib/api-error";
 
 type Props = {
   initialData?: TeacherListInitialData;
@@ -109,9 +109,9 @@ export function TeacherListForm({ initialData }: Props) {
 
       router.push("/dashboard/professor/listas");
       router.refresh();
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
-      toast.error(err.message || "Erro ao salvar a lista.");
+      toast.error(errorMessage(err) || "Erro ao salvar a lista.");
     }
   }
 

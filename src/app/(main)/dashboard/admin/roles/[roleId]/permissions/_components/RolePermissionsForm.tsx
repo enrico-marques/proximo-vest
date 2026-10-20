@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
+import { errorMessage } from "@/lib/api-error";
 
 type Permission = {
   id: string;
@@ -99,9 +100,9 @@ export function RolePermissionsForm({ roleId }: { roleId: string }) {
       if (!res.ok) throw new Error(data?.error?.message || "Erro ao salvar.");
 
       toast.success("Permissões atualizadas com sucesso!");
-    } catch (e: any) {
+    } catch (e) {
       console.error(e);
-      toast.error(e.message || "Erro ao salvar permissões.");
+      toast.error(errorMessage(e) || "Erro ao salvar permissões.");
     } finally {
       setSaving(false);
     }

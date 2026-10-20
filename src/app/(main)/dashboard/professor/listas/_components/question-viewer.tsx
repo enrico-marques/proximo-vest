@@ -81,13 +81,13 @@ export function QuestionViewer({ question }: Props) {
               urlTransform={questionUrlTransform}
               skipHtml={false}
               components={{
-                p: ({ node, ...props }: any) => (
+                p: ({ node, ...props }) => (
                   <p {...props} />
                 ),
-                li: ({ node, ...props }: any) => (
+                li: ({ node, ...props }) => (
                   <li {...props} />
                 ),
-                img: ({ node, ...props }: any) => (
+                img: ({ node, ...props }) => (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
                     {...props}
@@ -130,10 +130,10 @@ export function QuestionViewer({ question }: Props) {
                       urlTransform={questionUrlTransform}
                       skipHtml={false}
                       components={{
-                        p: ({ node, ...props }: any) => (
+                        p: ({ node, ...props }) => (
                           <p {...props} />
                         ),
-                        img: ({ node, ...props }: any) => (
+                        img: ({ node, ...props }) => (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img
                             {...props}

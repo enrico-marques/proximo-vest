@@ -7,6 +7,5 @@ export function useCan(opts?: { role?: string | string[]; perm?: string | string
   const profile = useAuthProfile();
 
   if (!profile) return false; // se não tiver profile no contexto, ninguém tem permissão
-console.log(profile)
   return can(profile, opts);
 }

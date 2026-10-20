@@ -24,6 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { errorMessage } from "@/lib/api-error";
 
 type UserStatus = "ACTIVE" | "SUSPENDED" | "DELETED"; // ajuste se seu enum for diferente
 
@@ -77,9 +78,9 @@ export function UserAccessPage({ userId, defaultName, defaultEmail }: Props) {
         setRoleIds(data.userRoleIds);
         setPermissions(data.permissions);
         setPermissionIds(data.userPermissionIds);
-      } catch (err: any) {
+      } catch (err) {
         console.error(err);
-        toast.error(err.message ?? "Erro ao carregar dados do usuário");
+        toast.error(errorMessage(err) ?? "Erro ao carregar dados do usuário");
       } finally {
         setLoading(false);
       }
@@ -100,9 +101,9 @@ export function UserAccessPage({ userId, defaultName, defaultEmail }: Props) {
       if (!res.ok) throw new Error("Erro ao salvar dados do usuário");
 
       toast.success("Dados do usuário atualizados com sucesso");
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
-      toast.error(err.message ?? "Erro ao salvar dados do usuário");
+      toast.error(errorMessage(err) ?? "Erro ao salvar dados do usuário");
     } finally {
       setSavingUser(false);
     }
@@ -121,9 +122,9 @@ export function UserAccessPage({ userId, defaultName, defaultEmail }: Props) {
 
       setRoleIds(nextRoleIds);
       toast.success("Roles atualizadas com sucesso");
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
-      toast.error(err.message ?? "Erro ao salvar roles");
+      toast.error(errorMessage(err) ?? "Erro ao salvar roles");
     } finally {
       setSavingRoles(false);
     }
@@ -143,9 +144,9 @@ export function UserAccessPage({ userId, defaultName, defaultEmail }: Props) {
       setPermissionIds(nextPermissionIds);
       toast.success("Permissões atualizadas com sucesso");
 
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
-      toast.error(err.message ?? "Erro ao salvar permissões");
+      toast.error(errorMessage(err) ?? "Erro ao salvar permissões");
     } finally {
       setSavingPermissions(false);
     }

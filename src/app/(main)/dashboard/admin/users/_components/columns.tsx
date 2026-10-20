@@ -1,5 +1,5 @@
 import Link from "next/link";
-import type { DataTableColumnDef } from "@/components/data-table/use-data-table";
+import type { DataTableColumnDef, DataTableRow } from "@/components/data-table/use-data-table";
 import { CircleCheck, Loader, EllipsisVertical } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -28,6 +28,30 @@ import {
 import { DataTableColumnHeader } from "../../../../../../components/data-table/data-table-column-header";
 
 import { sectionSchema } from "./schema";
+
+function RowActions({ row }: { row: DataTableRow<z.infer<typeof sectionSchema>> }) {
+  const router = useRouter();
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="ghost"
+          className="data-[state=open]:bg-muted text-muted-foreground flex size-8"
+          size="icon"
+        >
+          <EllipsisVertical />
+          <span className="sr-only">Abrir menu</span>
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-32">
+        <DropdownMenuItem onClick={() => router.push(`/dashboard/admin/users/${row.original.id}/edit`)}>
+          Editar
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
 
 export const dashboardColumns: DataTableColumnDef<z.infer<typeof sectionSchema>>[] = [
   {
@@ -118,33 +142,7 @@ export const dashboardColumns: DataTableColumnDef<z.infer<typeof sectionSchema>>
 
   {
     id: "actions",
-    cell: ({ row }) => {
-         const router = useRouter(); // hook tem que ficar aqui dentro
-   
-         return (
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            className="data-[state=open]:bg-muted text-muted-foreground flex size-8"
-            size="icon"
-          >
-            <EllipsisVertical />
-            <span className="sr-only">Open menu</span>
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-32">
-            <DropdownMenuItem
-              onClick={() =>
-                router.push(`/dashboard/admin/users/${row.original.id}/edit`)
-              }
-            >
-              Editar
-            </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-     );
-    },
+    cell: ({ row }) => <RowActions row={row} />,
     enableSorting: false,
   },
 ];

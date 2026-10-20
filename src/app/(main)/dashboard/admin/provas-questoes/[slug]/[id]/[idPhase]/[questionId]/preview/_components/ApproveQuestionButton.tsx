@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { errorMessage } from "@/lib/api-error";
 
 type Status = "DRAFT" | "PUBLISHED" | "ARCHIVED";
 
@@ -44,8 +45,8 @@ export function ApproveQuestionButton({
         );
 
         toast.success("Questão aprovada e publicada!");
-      } catch (err: any) {
-        toast.error(err.message || "Erro ao aprovar a questão.");
+      } catch (err) {
+        toast.error(errorMessage(err) || "Erro ao aprovar a questão.");
       }
     });
   }

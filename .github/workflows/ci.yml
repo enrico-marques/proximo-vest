@@ -47,8 +47,6 @@ jobs:
         run: npx tsc --noEmit
 
       - name: Lint
-        # The V1 baseline still has lint errors; flip this off once they are fixed.
-        continue-on-error: true
         run: npm run lint
 
       - name: Unit tests
