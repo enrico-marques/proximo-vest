@@ -11,8 +11,6 @@ import {
   Fingerprint,
   SquareArrowUpRight,
   LayoutDashboard,
-  ChartBar,
-  Banknote,
   Gauge,
   GraduationCap,
   type LucideIcon,
@@ -112,22 +110,12 @@ export const sidebarItems: NavGroup[] = [
   },
   {
     id: 2,
-    label: "Dashboards",
+    label: "Geral",
     items: [
       {
-        title: "Default",
+        title: "Início",
         url: "/dashboard/default",
         icon: LayoutDashboard,
-      },
-      {
-        title: "CRM",
-        url: "/dashboard/crm",
-        icon: ChartBar,
-      },
-      {
-        title: "Finance",
-        url: "/dashboard/finance",
-        icon: Banknote,
       },
     ],
   },

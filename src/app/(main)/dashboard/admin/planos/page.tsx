@@ -1,29 +1,19 @@
+import { listPlans } from "@/server/plans";
+import { can } from "@/utils/access-core";
 import { requirePageAuth } from "@/utils/access";
+
 import { PlansAdminClient } from "./_components/plans-admin-client";
-import { headers } from "next/headers";
 
 export default async function PlansAdminPage() {
-  await requirePageAuth({
-      perm: "plan.read",
+  const { profile } = await requirePageAuth({
+    perm: ["plan.read", "plan.manage"],
     emailVerified: true,
     blockSuspended: true,
     blockDeleted: true,
     onForbiddenRedirect: "/dashboard",
   });
 
-    const res = await fetch(`${process.env.API_URL}/plans/list`, {
-    cache: "no-store",
-    headers: {
-      // encaminha os cookies da requisição atual pra sua API interna
-      cookie: (await headers()).get("cookie") ?? "",
-    },
-    });
+  const plans = await listPlans({ includeInactive: true });
 
-  if (!res.ok) throw new Error("Falha ao buscar os planos");
-
-  const plans = await res.json();
-
-
-
-  return <PlansAdminClient initialPlans={plans} />;
+  return <PlansAdminClient plans={plans} canManage={can(profile, { perm: "plan.manage" })} />;
 }

@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "../../../../lib/prisma";
 import { z } from "zod";
-import { requireAPIAuth } from "@/utils/access";
+import { defineRoute } from "@/server/auth/define-route";
 
 type Params = { id: string };
-type Ctx = { params: Promise<Params> };
 
 const PatchSchema = z.object({
   label: z.string().optional(),
@@ -12,46 +11,25 @@ const PatchSchema = z.object({
   maxScore: z.number().optional(),
 });
 
-export async function PATCH(req: NextRequest, ctx: Ctx) {
-  await requireAPIAuth({
-    perm: "expectedAnswer.manage",
-    emailVerified: true,
-    blockSuspended: true,
-    blockDeleted: true,
-  });
-
-  try {
-    const { id: idStr } = await ctx.params;
-    const id = Number(idStr);
-    if (!Number.isFinite(id)) {
-      return NextResponse.json(
-        { error: { message: "Invalid id" } },
-        { status: 400 }
-      );
-    }
-
-    const data = PatchSchema.parse(await req.json());
-    const updated = await prisma.frAnswerExpected.update({
-      where: { id },
-      data: { ...data, maxScore: data.maxScore as any },
-    });
-    return NextResponse.json(updated);
-  } catch (e: any) {
+export const PATCH = defineRoute<Params>({ perm: "expectedAnswer.manage" }, async (req, ctx) => {
+  const { id: idStr } = await ctx.params;
+  const id = Number(idStr);
+  if (!Number.isFinite(id)) {
     return NextResponse.json(
-      { error: { message: e.message } },
+      { error: { message: "Invalid id" } },
       { status: 400 }
     );
   }
-}
 
-export async function DELETE(_req: NextRequest, ctx: Ctx) {
-  await requireAPIAuth({
-    perm: "expectedAnswer.manage",
-    emailVerified: true,
-    blockSuspended: true,
-    blockDeleted: true,
+  const data = PatchSchema.parse(await req.json());
+  const updated = await prisma.frAnswerExpected.update({
+    where: { id },
+    data,
   });
+  return NextResponse.json(updated);
+});
 
+export const DELETE = defineRoute<Params>({ perm: "expectedAnswer.manage" }, async (_req, ctx) => {
   const { id: idStr } = await ctx.params;
   const id = Number(idStr);
   if (!Number.isFinite(id)) {
@@ -63,4 +41,4 @@ export async function DELETE(_req: NextRequest, ctx: Ctx) {
 
   await prisma.frAnswerExpected.delete({ where: { id } });
   return NextResponse.json({ ok: true });
-}
+});

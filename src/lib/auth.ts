@@ -53,6 +53,22 @@ export const auth = betterAuth({
     }
    },
 
+  // Active in production. Built-in rules cap sign-in/sign-up at 3 per 10s and password reset or
+  // verification e-mails at 3 per minute, per client IP. Counters live in the database so every
+  // serverless instance shares them.
+  rateLimit: {
+    storage: "database",
+  },
+
+  advanced: {
+    ipAddress: {
+      // On Vercel this header holds a single client IP set by the edge, which better-auth trusts.
+      // Behind another proxy, configure trustedProxies: without a resolvable IP all clients share
+      // one bucket, and anyone could lock everyone out of sign-in.
+      ipAddressHeaders: ["x-forwarded-for"],
+    },
+  },
+
   hooks: {
     before: createAuthMiddleware(async (ctx) => {
       // só intercepta o login por email+senha

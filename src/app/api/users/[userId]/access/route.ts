@@ -1,17 +1,10 @@
 // app/api/admin/users/[userId]/access/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAPIAuth } from "@/utils/access";
+import { defineRoute } from "@/server/auth/define-route";
 
-type RouteContext = {
-  params: Promise<{ userId: string }>;
-};
 
-export async function GET(
-  
-  _req: Request, context: RouteContext) {
-  await requireAPIAuth({ perm: "user.read", emailVerified: true, blockSuspended: true, blockDeleted: true });
-
+export const GET = defineRoute<{ userId: string }>({ perm: "user.read" }, async (_req, context) => {
   const { userId } = await context.params;
 
   const user = await prisma.user.findUnique({
@@ -59,4 +52,4 @@ export async function GET(
     })),
     userPermissionIds: user.directPerms.map((p) => p.permissionId),
   });
-}
+});

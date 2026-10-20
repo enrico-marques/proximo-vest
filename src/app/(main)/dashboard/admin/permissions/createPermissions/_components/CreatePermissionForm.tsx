@@ -19,6 +19,7 @@ import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 
 import { z } from "zod";
+import { apiErrorMessage, errorMessage } from "@/lib/api-error";
 
 export const PermissionsCreateSchema = z.object({
   resource: z.string().min(1, "Recurso obrigatório"), // "exam"
@@ -72,14 +73,14 @@ export function CreatePermissionForm() {
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data?.error || "Erro ao criar permissão.");
+        throw new Error(apiErrorMessage(data, "Erro ao criar permissão."));
       }
 
       toast.success("Permissão criada com sucesso!");
       router.push("/dashboard/admin/permissions");
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
-      toast.error(err.message || "Erro inesperado ao criar permissão.");
+      toast.error(errorMessage(err) || "Erro inesperado ao criar permissão.");
     }
   }
 

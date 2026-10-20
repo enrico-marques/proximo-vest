@@ -4,7 +4,7 @@
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
-type Board = { editionLabel: string; error?: any };
+type Board = { editionLabel: string; error?: unknown };
 
 export function BoardViewClient({ board }: { board: Board }) {
   const router = useRouter();

@@ -1,12 +1,12 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+import { useForm, type Resolver } from "react-hook-form";
 import { z } from "zod";
 import { useState, useMemo, useEffect, useCallback } from "react";
 import dynamic from "next/dynamic";
-import MarkdownIt from "markdown-it";
-import { useUploadFile } from "@better-upload/client";
+import { createQuestionMarkdown } from "@/lib/markdown";
+import { useQuestionImageUpload } from "@/components/questions/use-question-image-upload";
 import "react-markdown-editor-lite/lib/index.css";
 
 const MdEditor = dynamic(() => import("react-markdown-editor-lite"), {
@@ -43,12 +43,10 @@ import { toast } from "sonner";
 import { AlertTriangle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { sl } from "date-fns/locale";
+import { errorMessage } from "@/lib/api-error";
+import { requestTaxonomies } from "@/components/questions/request-taxonomies";
 
-const mdParser = new MarkdownIt({
-  html: true,
-  linkify: true,
-  breaks: true,
-});
+const mdParser = createQuestionMarkdown();
 
 // ---------- Tipos auxiliares ----------
 
@@ -183,6 +181,11 @@ const frSchema = baseSchema.extend({
     .min(1, "Informe pelo menos uma resposta modelo"),
 });
 
+// One shape for both question types; the active schema validates only its own fields.
+type QuestionFormValues = z.infer<typeof baseSchema> &
+  Partial<z.infer<typeof mcqSchema>> &
+  Partial<z.infer<typeof frSchema>>;
+
 type TaxonomyCheckResult = {
   missingSubjects: string[];
   missingSkills: string[];
@@ -210,7 +213,7 @@ export function EditQuestionForm({
 
   const [taxonomyCheckResult, setTaxonomyCheckResult] =
     useState<TaxonomyCheckResult | null>(null);
-  const [pendingValues, setPendingValues] = useState<any | null>(null);
+  const [pendingValues, setPendingValues] = useState<QuestionFormValues | null>(null);
   const [isTaxonomyModalOpen, setIsTaxonomyModalOpen] = useState(false);
   const [isCreatingTaxonomies, setIsCreatingTaxonomies] = useState(false);
 
@@ -236,8 +239,8 @@ export function EditQuestionForm({
   const getOptionText = (label: "A" | "B" | "C" | "D" | "E") =>
     mcq?.options.find((o) => o.label === label)?.textPlain || "";
 
-  const form = useForm<any>({
-    resolver: zodResolver(schema),
+  const form = useForm<QuestionFormValues>({
+    resolver: zodResolver(schema) as Resolver<QuestionFormValues>,
     defaultValues: {
       examPhaseId: question.examPhaseId,
       numberLabel: question.numberLabel,
@@ -247,7 +250,7 @@ export function EditQuestionForm({
       stimulusText: question.stimulus.contentHtml || "",
       stimulusSourceRef: question.stimulus.sourceRef || "",
 
-      optionCount: String(effectiveOptionCount),
+      optionCount: effectiveOptionCount === 4 ? "4" : "5",
       shuffleOptions: mcq?.shuffleOptions ?? true,
       correctOptionKey: mcq?.correctOptionKey ?? "A",
       optionA: getOptionText("A"),
@@ -264,52 +267,34 @@ export function EditQuestionForm({
 
   const hasOptionE = effectiveOptionCount === 5;
 
-  const { uploadAsync, isPending: isUploadingImage } = useUploadFile({
-    route: "markdown-images",
-  });
+  const { uploadImage, isUploading: isUploadingImage } = useQuestionImageUpload();
 
   const handleMarkdownImageUpload = async (file: File): Promise<string> => {
-    const uploaded = (await uploadAsync(file)) as any;
-
-    if (!uploaded.file.objectInfo.key) {
-      console.error(uploaded.error);
-      throw new Error("Upload falhou: nenhuma key retornada.");
+    try {
+      return await uploadImage(file);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Não foi possível enviar a imagem.");
+      throw err;
     }
-
-    const key = uploaded.file.objectInfo.key;
-    const url = `${process.env.NEXT_PUBLIC_R2_S3_ENDPOINT!}/${key}`;
-    return url;
   };
 
   // ---------- Carregar taxonomias ----------
 
-  const fetchTaxonomies = useCallback(async () => {
-    try {
-      setIsLoadingTaxonomies(true);
-
-      const [subjectsRes, skillsRes] = await Promise.all([
-        fetch("/api/subject/list"),
-        fetch("/api/skill/list"),
-      ]);
-
-      if (!subjectsRes.ok || !skillsRes.ok) {
-        throw new Error("Erro ao carregar subjects/skills.");
-      }
-
-      const subjectsData = (await subjectsRes.json()) as SubjectOption[];
-      const skillsData = (await skillsRes.json()) as SkillOption[];
-
-      setSubjectsOptions(subjectsData || []);
-      setSkillsOptions(skillsData || []);
-    } catch (err: any) {
-      console.error(err);
-      toast.error(
-        err.message || "Não foi possível carregar subjects/skills da API."
-      );
-    } finally {
-      setIsLoadingTaxonomies(false);
-    }
-  }, []);
+  // State is only set in promise callbacks, so this can start from an effect.
+  const fetchTaxonomies = useCallback(
+    () =>
+      requestTaxonomies<SubjectOption, SkillOption>()
+        .then(({ subjects, skills }) => {
+          setSubjectsOptions(subjects);
+          setSkillsOptions(skills);
+        })
+        .catch((err) => {
+          console.error(err);
+          toast.error(errorMessage(err) || "Não foi possível carregar subjects/skills da API.");
+        })
+        .finally(() => setIsLoadingTaxonomies(false)),
+    [],
+  );
 
   useEffect(() => {
     fetchTaxonomies();
@@ -317,7 +302,7 @@ export function EditQuestionForm({
 
   // ---------- Taxonomy check + create ----------
 
-  function checkMissingTaxonomies(values: any): TaxonomyCheckResult | null {
+  function checkMissingTaxonomies(values: QuestionFormValues): TaxonomyCheckResult | null {
     const existingSubjectSlugs = new Set(subjectsOptions.map((s) => s.slug));
     const existingSkillCodes = new Set(
       skillsOptions
@@ -376,12 +361,13 @@ export function EditQuestionForm({
       ),
     ]);
 
+    setIsLoadingTaxonomies(true);
     await fetchTaxonomies();
   }
 
   // ---------- Update question ----------
 
-  async function updateQuestion(values: any) {
+  async function updateQuestion(values: QuestionFormValues) {
     const subjectsArray =
       values.subjects && values.subjects.length > 0
         ? (values.subjects as string[])
@@ -398,7 +384,7 @@ export function EditQuestionForm({
       sourceRef: values.stimulusSourceRef || undefined,
     };
 
-    const payload: any = {
+    const payload: Record<string, unknown> = {
       numberLabel: values.numberLabel,
       isDiscursive,
       status: values.status,
@@ -411,10 +397,10 @@ export function EditQuestionForm({
       const count = Number(values.optionCount);
 
       const options: McqOption[] = [
-        { label: "A", textPlain: values.optionA },
-        { label: "B", textPlain: values.optionB },
-        { label: "C", textPlain: values.optionC },
-        { label: "D", textPlain: values.optionD },
+        { label: "A", textPlain: values.optionA ?? "" },
+        { label: "B", textPlain: values.optionB ?? "" },
+        { label: "C", textPlain: values.optionC ?? "" },
+        { label: "D", textPlain: values.optionD ?? "" },
       ];
 
       if (count === 5 && values.optionE) {
@@ -458,7 +444,7 @@ console.log(res)
 
   // ---------- onSubmit ----------
 
-  async function onSubmit(values: any) {
+  async function onSubmit(values: QuestionFormValues) {
     try {
       setIsSubmitting(true);
 
@@ -473,9 +459,9 @@ console.log(res)
       }
 
       await updateQuestion(values);
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
-      toast.error(err.message || "Erro inesperado ao atualizar questão.");
+      toast.error(errorMessage(err) || "Erro inesperado ao atualizar questão.");
     } finally {
       setIsSubmitting(false);
     }
@@ -492,7 +478,7 @@ console.log(res)
 
       await updateQuestion(pendingValues);
       setPendingValues(null);
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
       toast.error("Erro ao criar novas taxonomias.");
     } finally {
@@ -678,7 +664,7 @@ console.log(res)
                                   className="ml-1 text-[10px]"
                                   onClick={() =>
                                     field.onChange(
-                                      field.value.filter(
+                                      (field.value ?? []).filter(
                                         (s: string) => s !== slug
                                       )
                                     )
@@ -792,7 +778,7 @@ console.log(res)
                                   className="ml-1 text-[10px]"
                                   onClick={() =>
                                     field.onChange(
-                                      field.value.filter(
+                                      (field.value ?? []).filter(
                                         (c: string) => c !== code
                                       )
                                     )

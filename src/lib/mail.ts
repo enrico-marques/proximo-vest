@@ -1,7 +1,5 @@
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 export async function sendMail({
   to,
   subject,
@@ -17,7 +15,9 @@ export async function sendMail({
   }
 
   try {
-    await resend.emails.send({
+    // Created per call: the constructor throws without a key, which would break every module
+    // importing this one (auth included) on setups without e-mail.
+    await new Resend(process.env.RESEND_API_KEY).emails.send({
       from: process.env.MAIL_FROM ?? "No Reply <no-reply@example.com>",
       to,
       subject,

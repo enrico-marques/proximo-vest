@@ -18,7 +18,7 @@ export const metadata: Metadata = {
 };
 
 export default async function EditTeacherListPage({ params }: PageProps) {
-  const { session } = await requirePageAuth();
+  const { session } = await requirePageAuth({ perm: "teacherList.manage", emailVerified: true });
 
   const list = await prisma.teacherList.findFirst({
     where: {

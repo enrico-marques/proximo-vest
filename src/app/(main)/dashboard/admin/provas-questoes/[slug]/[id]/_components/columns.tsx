@@ -1,4 +1,4 @@
-import { ColumnDef } from "@tanstack/react-table";
+import type { DataTableColumnDef, DataTableRow } from "@/components/data-table/use-data-table";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import {
@@ -44,7 +44,7 @@ async function handleDelete(itemId: number) {
   }
 }
 
-async function handleEdit(id: number, data: { name: any }) {
+async function handleEdit(id: number, data: { name: string }) {
   try {
     const res = await fetch(`/api/exam-board/${id}`, {
       method: "PATCH",
@@ -63,10 +63,122 @@ async function handleEdit(id: number, data: { name: any }) {
   }
 }
 
+function RowActions({ row, id }: { row: DataTableRow<z.infer<typeof sectionSchema>>; id: string }) {
+  const [isDialogOpen, setIsDialogOpen] = React.useState(false);
+  const [isEditOpen, setIsEditOpen] = React.useState(false);
+
+  // dados atuais
+  const item = row.original;
+
+  return (
+    <div className="flex justify-end items-center gap-2 pr-4">
+      {/* Botão que abre o modal de edição */}
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => setIsEditOpen(true)}
+      >
+        Editar
+      </Button>
+
+      {/* Modal de edição */}
+      <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Editar Edição: {item.phaseNumber}</DialogTitle>
+            <DialogDescription>
+              Faça alterações nos dados da edição e salve quando terminar.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault();
+
+              const formData = new FormData(e.currentTarget);
+
+              await handleEdit(item.id, {
+                name: String(formData.get("name") ?? ""),
+              });
+
+              setIsEditOpen(false);
+            }}
+            className="space-y-4"
+          >
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-medium">Ano</label>
+              <input
+                name="name"
+                defaultValue={item.phaseNumber}
+                className="border rounded-md px-2 py-1"
+                required
+              />
+            </div>
+
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsEditOpen(false)}
+              >
+                Cancelar
+              </Button>
+              <Button
+                type="submit"
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                Salvar alterações
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Botão de deletar */}
+      <Button
+        variant="destructive"
+        size="sm"
+        onClick={() => setIsDialogOpen(true)}
+      >
+        Deletar
+      </Button>
+
+      {/* Modal de confirmação de delete */}
+      <AlertDialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Tem certeza que deseja deletar esta fase?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação não pode ser desfeita. Isso irá deletar
+              permanentemente a fase.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+
+            <AlertDialogAction
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+              onClick={async () => {
+                await handleDelete(item.id);
+                setIsDialogOpen(false);
+              }}
+            >
+              Deletar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+}
+
 export const getdashboardColumns = (
   slug: string,
   id: string
-): ColumnDef<z.infer<typeof sectionSchema>>[] => [
+): DataTableColumnDef<z.infer<typeof sectionSchema>>[] => [
   {
     accessorKey: "phaseNumber",
     header: ({ column }) => (
@@ -142,117 +254,7 @@ export const getdashboardColumns = (
   {
     accessorKey: "actions",
     header: () => <div className="text-right pr-4">Ações</div>,
-    cell: ({ row }) => {
-      const [isDialogOpen, setIsDialogOpen] = React.useState(false);
-      const [isEditOpen, setIsEditOpen] = React.useState(false);
-
-      // dados atuais
-      const item = row.original;
-
-      return (
-        <div className="flex justify-end items-center gap-2 pr-4">
-          {/* Botão que abre o modal de edição */}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setIsEditOpen(true)}
-          >
-            Editar
-          </Button>
-
-          {/* Modal de edição */}
-          <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-            <DialogContent className="max-w-md">
-              <DialogHeader>
-                <DialogTitle>Editar Edição: {item.phaseNumber}</DialogTitle>
-                <DialogDescription>
-                  Faça alterações nos dados da edição e salve quando terminar.
-                </DialogDescription>
-              </DialogHeader>
-
-              <form
-                onSubmit={async (e) => {
-                  e.preventDefault();
-
-                  const formData = new FormData(e.currentTarget);
-
-                  await handleEdit(item.id, {
-                    name: formData.get("name"),
-                  });
-
-                  setIsEditOpen(false);
-                }}
-                className="space-y-4"
-              >
-                <div className="flex flex-col gap-2">
-                  <label className="text-sm font-medium">Ano</label>
-                  <input
-                    name="name"
-                    defaultValue={item.phaseNumber}
-                    className="border rounded-md px-2 py-1"
-                    required
-                  />
-                </div>
-
-                <DialogFooter>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setIsEditOpen(false)}
-                  >
-                    Cancelar
-                  </Button>
-                  <Button
-                    type="submit"
-                    className="bg-blue-600 hover:bg-blue-700"
-                  >
-                    Salvar alterações
-                  </Button>
-                </DialogFooter>
-              </form>
-            </DialogContent>
-          </Dialog>
-
-          {/* Botão de deletar */}
-          <Button
-            variant="destructive"
-            size="sm"
-            onClick={() => setIsDialogOpen(true)}
-          >
-            Deletar
-          </Button>
-
-          {/* Modal de confirmação de delete */}
-          <AlertDialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>
-                  Tem certeza que deseja deletar esta fase?
-                </AlertDialogTitle>
-                <AlertDialogDescription>
-                  Esta ação não pode ser desfeita. Isso irá deletar
-                  permanentemente a fase.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-
-                <AlertDialogAction
-                  className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
-                  onClick={async () => {
-                    await handleDelete(item.id);
-                    setIsDialogOpen(false);
-                  }}
-                >
-                  Deletar
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </div>
-      );
-    },
+    cell: ({ row }) => <RowActions row={row} id={id} />,
     enableSorting: false,
   },
 ];

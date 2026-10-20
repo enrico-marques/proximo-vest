@@ -1,14 +1,11 @@
 // app/api/teacher-lists/[id]/pdf/route.ts
-import { NextRequest, NextResponse } from "next/server";
-import PDFDocument from "pdfkit/js/pdfkit.standalone";
+import { NextResponse } from "next/server";
+import PDFDocument from "pdfkit";
+import { isBlobUrl, resolveStorageUrl } from "@/lib/blob";
 import { prisma } from "@/lib/prisma";
-import { requireAPIAuth } from "@/utils/access";
+import { defineRoute } from "@/server/auth/define-route";
 
 export const runtime = "nodejs";
-
-type RouteContext = {
-  params: { id: string };
-};
 
 // markdown bem simples: quebra texto x imagens ![alt](url)
 type MarkdownPart =
@@ -100,11 +97,16 @@ async function drawMarkdownBlock(
     }
 
     // IMAGEM
-    const src = part.src.trim();
-    if (!src) continue;
+    if (!part.src.trim()) continue;
 
     try {
-      // baixa a imagem
+      const src = resolveStorageUrl(part.src.trim());
+      // Question markdown is user-authored: only our blob store may be fetched by the server.
+      if (!isBlobUrl(src)) {
+        console.warn("[PDF] Imagem fora do armazenamento ignorada:", src);
+        continue;
+      }
+
       const res = await fetch(src);
       if (!res.ok) {
         // apenas loga, não quebra o PDF
@@ -137,7 +139,7 @@ async function drawMarkdownBlock(
       // eslint-disable-next-line no-console
       console.error(
         "[PDF] Erro ao desenhar imagem:",
-        src,
+        part.src,
         err instanceof Error ? err.message : err,
       );
       // segue a vida, não vamos quebrar o PDF por causa disso
@@ -154,14 +156,10 @@ function htmlToPlain(input: string | null | undefined): string {
   return input.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
 }
 
-
 type Params = { id: string };
-type Ctx = { params: Promise<Params> };
 
-export async function GET(req: NextRequest, ctx: Ctx) {
-  const { session } = await requireAPIAuth();
-
-  const { id } = await ctx.params;
+export const GET = defineRoute<Params>({ perm: "teacherList.manage" }, async (req, { params, user }) => {
+  const { id } = params;
 
   const { searchParams } = new URL(req.url);
   const withAnswers = searchParams.get("withAnswers") === "1";
@@ -170,7 +168,7 @@ export async function GET(req: NextRequest, ctx: Ctx) {
   const list = await prisma.teacherList.findFirst({
     where: {
       id,
-      teacherId: session?.user.id,
+      teacherId: user.id,
     },
     include: {
       questions: {
@@ -340,11 +338,11 @@ export async function GET(req: NextRequest, ctx: Ctx) {
   doc.end();
   const pdfBuffer = await done;
 
-  return new NextResponse(pdfBuffer as any, {
+  return new NextResponse(new Uint8Array(pdfBuffer), {
     status: 200,
     headers: {
       "Content-Type": "application/pdf",
       "Content-Disposition": `inline; filename="lista-${list.id}.pdf"`,
     },
   });
-}
+});

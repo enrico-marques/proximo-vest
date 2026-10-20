@@ -1,26 +1,18 @@
 // app/api/teacher-lists/[id]/duplicate/route.ts
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAPIAuth } from "@/utils/access";
-
-
-type RouteContext = {
-  params: { id: string };
-};
+import { defineRoute } from "@/server/auth/define-route";
+import { consumeUsage } from "@/server/limits";
 
 type Params = { id: string };
-type Ctx = { params: Promise<Params> };
 
-export async function GET(req: NextRequest, ctx: Ctx) {
-  const { session } = await requireAPIAuth();
-
-  const { id } = await ctx.params;
-
+export const POST = defineRoute<Params>({ perm: "teacherList.manage" }, async (_req, { params, user }) => {
+  const { id } = params;
 
   const list = await prisma.teacherList.findFirst({
     where: {
       id: id,
-      teacherId: session?.user.id,
+      teacherId: user.id,
     },
     include: {
       questions: {
@@ -34,6 +26,8 @@ export async function GET(req: NextRequest, ctx: Ctx) {
   }
 
   const duplicated = await prisma.$transaction(async (tx) => {
+    await consumeUsage(user.id, "TEACHER_LIST", tx);
+
     const newList = await tx.teacherList.create({
       data: {
         name: `${list.name} (cópia)`,
@@ -57,4 +51,4 @@ export async function GET(req: NextRequest, ctx: Ctx) {
   });
 
   return NextResponse.json(duplicated, { status: 201 });
-}
+});

@@ -1,135 +1,114 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
-import { requireAPIAuth } from "@/utils/access";
+import { defineRoute } from "@/server/auth/define-route";
 
 const bodySchema = z.object({
   permissionIds: z.array(z.string()).min(0),
 });
 
-type RouteContext = {
-  params: Promise<{ roleId: string }>;
-};
 
-export async function GET(req: NextRequest, context: RouteContext) {
-  await requireAPIAuth({ perm: "role.manage", emailVerified: true, blockSuspended: true, blockDeleted: true });
-  try {
-    const { roleId } = await context.params;
+export const GET = defineRoute<{ roleId: string }>({ perm: "role.manage" }, async (req, context) => {
+  const { roleId } = await context.params;
 
-    const role = await prisma.role.findUnique({
-      where: { id: roleId },
-      include: {
-        perms: {
-          include: {
-            permission: true,
-          },
+  const role = await prisma.role.findUnique({
+    where: { id: roleId },
+    include: {
+      perms: {
+        include: {
+          permission: true,
         },
       },
-    });
+    },
+  });
 
-    if (!role) {
-      return NextResponse.json(
-        { error: { message: "Role não encontrada." } },
-        { status: 404 }
-      );
-    }
-
-    const permissions = role.perms.map((rp) => ({
-      roleId: rp.roleId,
-      permissionId: rp.permissionId,
-      granted: rp.granted,
-      permission: rp.permission,
-    }));
-
-    return NextResponse.json({
-      role: {
-        id: role.id,
-        name: role.name,
-        description: role.description,
-        isActive: role.isActive,
-      },
-      permissions,
-    });
-  } catch (e: any) {
-    console.error(e);
+  if (!role) {
     return NextResponse.json(
-      { error: { message: e.message } },
-      { status: 400 }
+      { error: { message: "Role não encontrada." } },
+      { status: 404 }
     );
   }
-}
 
-export async function PUT(req: NextRequest, context: RouteContext) {
-  await requireAPIAuth({ perm: "role.manage", emailVerified: true, blockSuspended: true, blockDeleted: true });
-  try {
-    const { roleId } = await context.params;
+  const permissions = role.perms.map((rp) => ({
+    roleId: rp.roleId,
+    permissionId: rp.permissionId,
+    granted: rp.granted,
+    permission: rp.permission,
+  }));
 
-    const body = await req.json();
-    const { permissionIds } = bodySchema.parse(body);
+  return NextResponse.json({
+    role: {
+      id: role.id,
+      name: role.name,
+      description: role.description,
+      isActive: role.isActive,
+    },
+    permissions,
+  });
+});
 
-    const role = await prisma.role.findUnique({ where: { id: roleId } });
-    if (!role) {
-      return NextResponse.json(
-        { error: { message: "Role não encontrada." } },
-        { status: 404 }
-      );
-    }
+export const PUT = defineRoute<{ roleId: string }>({ perm: "role.manage" }, async (req, context) => {
+  const { roleId } = await context.params;
 
-    const existing = await prisma.rolePermission.findMany({
-      where: { roleId },
-    });
+  const body = await req.json();
+  const { permissionIds } = bodySchema.parse(body);
 
-    const incomingSet = new Set(permissionIds);
-
-    const toGrant = permissionIds;
-
-    const toRevoke = existing
-      .filter((rp) => !incomingSet.has(rp.permissionId))
-      .map((rp) => rp.permissionId);
-
-    await Promise.all(
-      toGrant.map((permissionId) =>
-        prisma.rolePermission.upsert({
-          where: {
-            roleId_permissionId: { roleId, permissionId },
-          },
-          create: {
-            roleId,
-            permissionId,
-            granted: true,
-          },
-          update: {
-            granted: true,
-          },
-        })
-      )
+  const role = await prisma.role.findUnique({ where: { id: roleId } });
+  if (!role) {
+    return NextResponse.json(
+      { error: { message: "Role não encontrada." } },
+      { status: 404 }
     );
+  }
 
-    if (toRevoke.length > 0) {
-      await prisma.rolePermission.updateMany({
+  const existing = await prisma.rolePermission.findMany({
+    where: { roleId },
+  });
+
+  const incomingSet = new Set(permissionIds);
+
+  const toGrant = permissionIds;
+
+  const toRevoke = existing
+    .filter((rp) => !incomingSet.has(rp.permissionId))
+    .map((rp) => rp.permissionId);
+
+  await Promise.all(
+    toGrant.map((permissionId) =>
+      prisma.rolePermission.upsert({
         where: {
+          roleId_permissionId: { roleId, permissionId },
+        },
+        create: {
           roleId,
-          permissionId: { in: toRevoke },
+          permissionId,
+          granted: true,
         },
-        data: { granted: false },
-      });
-    }
+        update: {
+          granted: true,
+        },
+      })
+    )
+  );
 
-    const updated = await prisma.role.findUnique({
-      where: { id: roleId },
-      include: {
-        perms: {
-          include: { permission: true },
-        },
+  if (toRevoke.length > 0) {
+    await prisma.rolePermission.updateMany({
+      where: {
+        roleId,
+        permissionId: { in: toRevoke },
       },
+      data: { granted: false },
     });
-
-    return NextResponse.json(updated);
-  } catch (e: any) {
-    console.error(e);
-    return NextResponse.json(
-      { error: { message: e.message } },
-      { status: 400 }
-    );
   }
-}
+
+  const updated = await prisma.role.findUnique({
+    where: { id: roleId },
+    include: {
+      perms: {
+        include: { permission: true },
+      },
+    },
+  });
+
+  return NextResponse.json(updated);
+});

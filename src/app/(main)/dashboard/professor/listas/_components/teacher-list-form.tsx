@@ -16,6 +16,7 @@ import {
   TeacherListInitialData,
 } from "./types";
 import { TeacherListBuildStep } from "./teacher-list-build-step";
+import { readApiError, errorMessage } from "@/lib/api-error";
 
 type Props = {
   initialData?: TeacherListInitialData;
@@ -97,13 +98,9 @@ export function TeacherListForm({ initialData }: Props) {
       });
 
       if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        const msg =
-          body?.error ??
-          (isEditMode
-            ? "Erro ao atualizar a lista."
-            : "Erro ao criar a lista.");
-        throw new Error(msg);
+        throw new Error(
+          await readApiError(res, isEditMode ? "Erro ao atualizar a lista." : "Erro ao criar a lista."),
+        );
       }
 
       toast.success(
@@ -112,9 +109,9 @@ export function TeacherListForm({ initialData }: Props) {
 
       router.push("/dashboard/professor/listas");
       router.refresh();
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
-      toast.error(err.message || "Erro ao salvar a lista.");
+      toast.error(errorMessage(err) || "Erro ao salvar a lista.");
     }
   }
 

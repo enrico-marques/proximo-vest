@@ -1,12 +1,14 @@
 // app/api/teacher-lists/questions/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import type { Prisma } from "@/generated/prisma";
+import { z } from "zod";
+import { Difficulty, type Prisma } from "@/generated/prisma/client";
+import { defineRoute } from "@/server/auth/define-route";
 
 // opcional: força runtime node
 export const runtime = "nodejs";
 
-export async function GET(req: NextRequest) {
+export const GET = defineRoute({ perm: "teacherList.manage" }, async (req) => {
   const url = new URL(req.url);
 
   const subjectIdStr = url.searchParams.get("subjectId");
@@ -19,7 +21,7 @@ export async function GET(req: NextRequest) {
 
   // status sempre PUBLISHED
   andFilters.push({
-    status: "PUBLISHED" as any,
+    status: "PUBLISHED",
   });
 
   // disciplina
@@ -37,7 +39,7 @@ export async function GET(req: NextRequest) {
   // dificuldade
   if (difficulty && difficulty !== "all") {
     andFilters.push({
-      difficulty: difficulty as any,
+      difficulty: z.enum(Difficulty).parse(difficulty),
     });
   }
 
@@ -173,4 +175,4 @@ export async function GET(req: NextRequest) {
   });
 
   return NextResponse.json(dto);
-}
+});

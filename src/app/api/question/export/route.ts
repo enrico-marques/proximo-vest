@@ -1,17 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "../../../../lib/prisma";
 import { z } from "zod";
-import { requireAPIAuth } from "@/utils/access";
+import { defineRoute } from "@/server/auth/define-route";
 
 const Schema = z.object({ examPhaseId: z.number().int() });
 
-export async function POST(req: NextRequest) {
-  await requireAPIAuth({
-    perm: "question.batch",
-    emailVerified: true,
-    blockSuspended: true,
-    blockDeleted: true,
-  });
+export const POST = defineRoute({ perm: "question.batch" }, async (req) => {
   const { examPhaseId } = Schema.parse(await req.json());
   const items = await prisma.question.findMany({
     where: { examPhaseId },
@@ -25,4 +19,4 @@ export async function POST(req: NextRequest) {
     },
   });
   return NextResponse.json({ examPhaseId, items });
-}
+});

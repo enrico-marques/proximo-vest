@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "../../../../lib/prisma"
+import type { Prisma } from "@/generated/prisma/client";
 import { z } from "zod"
-import { requireAPIAuth } from "@/utils/access"
+import { defineRoute } from "@/server/auth/define-route";
 
 // Função utilitária do Zod para tratar parâmetros de query
 const intFromQuery = z.preprocess(
@@ -21,43 +22,30 @@ const Schema = z.object({
   dayNumber: intFromQuery,
 })
 
-export async function GET(req: NextRequest) {
-    await requireAPIAuth({
-      emailVerified: true,
-      blockSuspended: true,
-      blockDeleted: true,
-  
-    });
-  try {
-    const { searchParams } = new URL(req.url)
+export const GET = defineRoute({ perm: ["examPhase.read", "examPhase.manage"] }, async (req) => {
+  const { searchParams } = new URL(req.url)
 
-    // Faz o parse validado
-    const parsed = Schema.parse({
-      examEditionId: searchParams.get("examEditionId"),
-      phaseNumber: searchParams.get("phaseNumber"),
-      dayNumber: searchParams.get("dayNumber"),
-    })
+  // Faz o parse validado
+  const parsed = Schema.parse({
+    examEditionId: searchParams.get("examEditionId"),
+    phaseNumber: searchParams.get("phaseNumber"),
+    dayNumber: searchParams.get("dayNumber"),
+  })
 
-    // Monta o filtro dinâmico
-    const where: any = {}
-    if (parsed.examEditionId !== undefined) where.examEditionId = parsed.examEditionId
-    if (parsed.phaseNumber !== undefined) where.phaseNumber = parsed.phaseNumber
-    if (parsed.dayNumber !== undefined) where.dayNumber = parsed.dayNumber
+  // Monta o filtro dinâmico
+  const where: Prisma.ExamPhaseWhereInput = {}
+  if (parsed.examEditionId !== undefined) where.examEditionId = parsed.examEditionId
+  if (parsed.phaseNumber !== undefined) where.phaseNumber = parsed.phaseNumber
+  if (parsed.dayNumber !== undefined) where.dayNumber = parsed.dayNumber
 
-    // Consulta com ou sem filtros
-    const rows = await prisma.examPhase.findMany({
-      where,
-      orderBy: [
-        { phaseNumber: "asc" },
-        { dayNumber: "asc" },
-      ],
-    })
+  // Consulta com ou sem filtros
+  const rows = await prisma.examPhase.findMany({
+    where,
+    orderBy: [
+      { phaseNumber: "asc" },
+      { dayNumber: "asc" },
+    ],
+  })
 
-    return NextResponse.json(rows)
-  } catch (e: any) {
-    return NextResponse.json(
-      { error: { message: e.message } },
-      { status: 400 }
-    )
-  }
-}
+  return NextResponse.json(rows)
+});

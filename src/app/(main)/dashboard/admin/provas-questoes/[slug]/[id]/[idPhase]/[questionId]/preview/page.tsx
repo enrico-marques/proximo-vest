@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import MarkdownIt from "markdown-it";
+import { createQuestionMarkdown } from "@/lib/markdown";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -10,16 +10,12 @@ import {
   CardContent,
 } from "@/components/ui/card";
 import { ApproveQuestionButton } from "./_components/ApproveQuestionButton";
-import { QuestionStatusBadge } from "./_components/status-badge";
+import { QuestionStatusBadge, type StatusType } from "./_components/status-badge";
 import { requirePageAuth } from "@/utils/access";
 import { headers } from "next/headers";
 
 
-const md = new MarkdownIt({
-  html: true,
-  linkify: true,
-  breaks: true,
-});
+const md = createQuestionMarkdown();
 
 // Tipos esperados da API de questão (ajusta conforme seu backend)
 type SubjectDTO = {
@@ -71,7 +67,7 @@ type QuestionResponse = {
   numberLabel: string;
   isDiscursive: boolean;
   difficulty: string | null;
-  status: string;
+  status: StatusType;
   sourcePageStart: number | null;
   sourcePageEnd: number | null;
   createdAt: string;
@@ -153,7 +149,7 @@ export default async function QuestionPreviewPage({ params }: PageProps) {
           {/* Botão de aprovar só aparece se veio como DRAFT */}
           <ApproveQuestionButton
             questionId={question.id}
-            initialStatus={question.status as "DRAFT" | "PUBLISHED" | "ARCHIVED"}
+            initialStatus={question.status}
           />
 
           <Button variant="outline" size="sm" asChild>
@@ -170,7 +166,7 @@ export default async function QuestionPreviewPage({ params }: PageProps) {
           {isDiscursive ? "Discursiva" : "Objetiva"}
         </Badge>
 
-    <QuestionStatusBadge initialStatus={question.status as any} />
+    <QuestionStatusBadge initialStatus={question.status} />
 
 
         {question.difficulty && (

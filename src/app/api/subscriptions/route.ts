@@ -1,73 +1,43 @@
-// app/api/admin/subscriptions/route.ts
 import { NextResponse } from "next/server";
+import { z } from "zod";
+
+import { defineRoute } from "@/server/auth/define-route";
 import { prisma } from "@/lib/prisma";
-import { requireAPIAuth } from "@/utils/access";
 
-export async function GET(req: Request) {
-  await requireAPIAuth({
-    emailVerified: true,
-    blockSuspended: true,
-    blockDeleted: true,
-    // requiredRoles: ["ADMIN"], // encaixa com seu sistema depois
-  });
+const filtersSchema = z.object({
+  q: z.string().trim().max(100).default(""),
+  status: z.enum(["ACTIVE", "CANCEL_AT_PERIOD_END", "CANCELED", "EXPIRED"]).optional().catch(undefined),
+});
 
+export const GET = defineRoute({ perm: ["subscription.read", "subscription.manage"] }, async (req) => {
   const { searchParams } = new URL(req.url);
-  const q = searchParams.get("q")?.trim() || "";
-  const status = searchParams.get("status") || "";
+  const { q, status } = filtersSchema.parse({
+    q: searchParams.get("q") ?? undefined,
+    status: searchParams.get("status") ?? undefined,
+  });
 
   const subscriptions = await prisma.subscription.findMany({
     where: {
       AND: [
-        status
-          ? {
-              status: status as any,
-            }
-          : {},
+        status ? { status } : {},
         q
           ? {
               OR: [
-                {
-                  user: {
-                    email: {
-                      contains: q,
-                      mode: "insensitive",
-                    },
-                  },
-                },
-                {
-                  user: {
-                    name: {
-                      contains: q,
-                      mode: "insensitive",
-                    },
-                  },
-                },
-                {
-                  stripeSubscriptionId: {
-                    contains: q,
-                  },
-                },
-                {
-                  planKey: {
-                    contains: q,
-                    mode: "insensitive",
-                  },
-                },
+                { user: { email: { contains: q, mode: "insensitive" } } },
+                { user: { name: { contains: q, mode: "insensitive" } } },
+                { stripeSubscriptionId: { contains: q } },
+                { plan: { label: { contains: q, mode: "insensitive" } } },
               ],
             }
           : {},
       ],
     },
     include: {
-      user: {
-        select: { id: true, email: true, name: true },
-      },
+      user: { select: { id: true, email: true, name: true } },
       plan: true,
     },
-    orderBy: {
-      createdAt: "desc",
-    },
+    orderBy: { createdAt: "desc" },
   });
 
   return NextResponse.json(subscriptions);
-}
+});

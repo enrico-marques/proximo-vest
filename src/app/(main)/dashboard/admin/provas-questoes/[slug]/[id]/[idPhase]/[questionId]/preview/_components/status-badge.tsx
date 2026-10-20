@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
-type StatusType = "DRAFT" | "PUBLISHED" | "ARCHIVED";
+export type StatusType = "DRAFT" | "PUBLISHED" | "ARCHIVED";
 
 export function QuestionStatusBadge({
   initialStatus,
@@ -15,9 +15,10 @@ export function QuestionStatusBadge({
 
   // Evento customizado para atualizar status de fora
   useEffect(() => {
-    function handleStatusChange(e: any) {
-      if (e.detail?.status) {
-        setStatus(e.detail.status);
+    function handleStatusChange(e: Event) {
+      const next = (e as CustomEvent<{ status?: StatusType }>).detail?.status;
+      if (next) {
+        setStatus(next);
       }
     }
     window.addEventListener("question-status-changed", handleStatusChange);

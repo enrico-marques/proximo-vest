@@ -12,13 +12,13 @@ import { authClient } from "../../../../lib/auth-client";
 
 const FormSchema = z
   .object({
-    name: z.string().min(2, { message: "Name must be at least 2 characters." }),
-    email: z.email({ message: "Please enter a valid email address." }),
-    password: z.string().min(6, { message: "Password must be at least 6 characters." }),
-    confirmPassword: z.string().min(6, { message: "Confirm Password must be at least 6 characters." }),
+    name: z.string().min(2, { message: "O nome deve ter pelo menos 2 caracteres." }),
+    email: z.email({ message: "Informe um e-mail válido." }),
+    password: z.string().min(6, { message: "A senha deve ter pelo menos 6 caracteres." }),
+    confirmPassword: z.string().min(6, { message: "A confirmação deve ter pelo menos 6 caracteres." }),
   })
   .refine((data) => data.password === data.confirmPassword, {
-    message: "Passwords do not match.",
+    message: "As senhas não coincidem.",
     path: ["confirmPassword"],
   });
 
@@ -72,7 +72,7 @@ export function RegisterForm() {
             <FormItem>
               <FormLabel>Nome</FormLabel>
               <FormControl>
-                <Input id="name" type="text" placeholder="you@example.com" autoComplete="name" {...field} />
+                <Input id="name" type="text" placeholder="Seu nome completo" autoComplete="name" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -83,9 +83,9 @@ export function RegisterForm() {
           name="email"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Email Address</FormLabel>
+              <FormLabel>E-mail</FormLabel>
               <FormControl>
-                <Input id="email" type="email" placeholder="you@example.com" autoComplete="email" {...field} />
+                <Input id="email" type="email" placeholder="voce@exemplo.com" autoComplete="email" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -96,7 +96,7 @@ export function RegisterForm() {
           name="password"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Password</FormLabel>
+              <FormLabel>Senha</FormLabel>
               <FormControl>
                 <Input id="password" type="password" placeholder="••••••••" autoComplete="new-password" {...field} />
               </FormControl>
@@ -109,7 +109,7 @@ export function RegisterForm() {
           name="confirmPassword"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Confirm Password</FormLabel>
+              <FormLabel>Confirme a senha</FormLabel>
               <FormControl>
                 <Input
                   id="confirmPassword"
@@ -125,7 +125,7 @@ export function RegisterForm() {
         />
 
         <Button className="w-full" type="submit">
-          Register
+          Criar conta
         </Button>
       </form>
     </Form>

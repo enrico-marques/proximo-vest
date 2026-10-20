@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import { errorMessage } from "@/lib/api-error";
 
 
 export default function NewCouponPage() {
@@ -41,9 +42,9 @@ export default function NewCouponPage() {
 
       toast.success("Cupom criado com sucesso!");
       router.push("/dashboard/admin/coupons");
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
-      toast.error(err.message || "Erro ao criar cupom");
+      toast.error(errorMessage(err) || "Erro ao criar cupom");
     } finally {
       setIsSubmitting(false);
     }

@@ -1,14 +1,16 @@
-// app/api/auth/logout/route.ts
-import { headers } from "next/headers";
 import { NextResponse } from "next/server";
+import { APIError } from "better-auth/api";
+
 import { auth } from "@/lib/auth";
+import { defineRoute } from "@/server/auth/define-route";
 
-export async function POST() {
-  const hdrs = Object.fromEntries((await headers()).entries());
+// Public so that a stale or already-revoked session can still "log out" without an error.
+export const POST = defineRoute("public", async (req) => {
+  try {
+    await auth.api.signOut({ headers: req.headers });
+  } catch (err) {
+    if (!(err instanceof APIError)) throw err;
+  }
 
-  // Na sua versão, isso NÃO retorna Response — apenas executa o logout no server/DB
-  await auth.api.signOut({ headers: hdrs });
-
-  // Devolva um Response explícito para satisfazer o tipo do Next.js
   return new NextResponse(null, { status: 204 });
-}
+});

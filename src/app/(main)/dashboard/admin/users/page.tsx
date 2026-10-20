@@ -1,13 +1,12 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { requirePageAuth } from "@/utils/access";
-import { ChartAreaInteractive } from "./_components/chart-area-interactive";
 import { DataTable } from "./_components/data-table";
-import data from "./_components/data.json";
 import { SectionCards } from "./_components/section-cards";
 
 export default async function Page() {
   await requirePageAuth({
+    perm: "user.read",
     emailVerified: true,
     blockSuspended: true,
     blockDeleted: true,

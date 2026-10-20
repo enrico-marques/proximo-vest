@@ -1,35 +1,28 @@
+import { cache } from "react";
 import { headers } from "next/headers";
-import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { getUserSubscription } from "@/server/subscription";
-import { getPlanLimits, isActiveSubscription } from "@/server/subscription";
 
-import {
-  AuthProfile,
-  RoleName,
-  PermissionKey,
-  hasRole,
-  hasPermission,
-  can,
-} from "./access-core"; // 👈 importa do core
+import { type AuthProfile, type PermissionKey, type RoleName, can } from "./access-core";
 
 // ============================================================================
 // SESSÃO (Server only)
 // ============================================================================
 
-export async function getSessionOrNull() {
+// Memoized per request: the dashboard layout and its page both need the session and profile,
+// and every lookup is a billed database operation.
+export const getSessionOrNull = cache(async () => {
   const hdrs = Object.fromEntries((await headers()).entries());
   return auth.api.getSession({ headers: hdrs });
-}
+});
 
 // ============================================================================
 // CARREGA PERFIL DE AUTORIZAÇÃO (Server only)
 // ============================================================================
 
-export async function getAuthProfile(
+export const getAuthProfile = cache(async (
   userId: string
-): Promise<AuthProfile | null> {
+): Promise<AuthProfile | null> => {
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: {
@@ -100,65 +93,7 @@ export async function getAuthProfile(
     roles: roleNames,
     perms: permsArray,
   };
-}
-
-export async function requireAPIAuth(opts?: {
-  role?: RoleName | RoleName[];
-  perm?: PermissionKey | PermissionKey[];
-  emailVerified?: boolean;
-  blockSuspended?: boolean;
-  blockDeleted?: boolean;
-}) {
-  const session = await getSessionOrNull();
-
-  if (!session?.user?.id) {
-    return {
-      ok: false as const,
-      res: NextResponse.json({ error: "Unauthorized" }, { status: 401 }),
-    };
-  }
-
-  const profile = await getAuthProfile(session.user.id as string);
-  if (!profile) {
-    return {
-      ok: false as const,
-      res: NextResponse.json({ error: "Unauthorized" }, { status: 401 }),
-    };
-  }
-
-  const blockSuspended = opts?.blockSuspended ?? true;
-  const blockDeleted = opts?.blockDeleted ?? true;
-
-  if (blockDeleted && profile.status === "deleted") {
-    return {
-      ok: false as const,
-      res: NextResponse.json({ error: "DeletedAccount" }, { status: 403 }),
-    };
-  }
-
-  if (blockSuspended && profile.status === "suspended") {
-    return {
-      ok: false as const,
-      res: NextResponse.json({ error: "Suspended" }, { status: 403 }),
-    };
-  }
-
-  if (opts?.emailVerified && !profile.emailVerified) {
-    return {
-      ok: false as const,
-      res: NextResponse.json({ error: "EmailNotVerified" }, { status: 403 }),
-    };
-  }
-
-  if (!can(profile, { role: opts?.role, perm: opts?.perm })) {
-    return {
-      ok: false as const,
-      res: NextResponse.json({ error: "Forbidden" }, { status: 403 }),
-    };
-  }
-
-  return { ok: true as const, session, profile };
-}
+});
 
 // ============================================================================
 // REQUIRE PAGE AUTH (Server only)
@@ -219,16 +154,5 @@ export async function requirePageAuth(opts?: {
     return redirect(onForbiddenRedirect);
   }
 
-  // -------- ASSINATURA --------
-  const subscription = await getUserSubscription(session.user.id as string);
-  const subscriptionActive = isActiveSubscription(subscription);
-  const limits = getPlanLimits(subscription?.planKey ?? null);
-
-  return {
-    session,
-    profile,
-    subscription,
-    subscriptionActive,
-    limits,
-  };
+  return { session, profile };
 }

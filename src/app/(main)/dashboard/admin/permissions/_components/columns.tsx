@@ -1,6 +1,6 @@
 "use client";
 
-import { ColumnDef } from "@tanstack/react-table";
+import type { DataTableColumnDef } from "@/components/data-table/use-data-table";
 import { EllipsisVertical } from "lucide-react";
 import { z } from "zod";
 import { useRouter } from "next/navigation";
@@ -23,7 +23,7 @@ type RoleRow = z.infer<typeof permissionsCreateSchema> & {
   id: string;
 };
 
-export const dashboardColumns: ColumnDef<RoleRow>[] = [
+export const dashboardColumns: DataTableColumnDef<RoleRow>[] = [
   {
     accessorKey: "name",
     header: ({ column }) => (

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "../../../../lib/prisma";
 import { z } from "zod";
+import { isQuestionImagePathname } from "@/lib/blob";
+import { defineRoute } from "@/server/auth/define-route";
 
 const OptionKey = z.enum(["A","B","C","D","E"]);
 const ItemSchema = z.object({
@@ -14,7 +16,7 @@ const ItemSchema = z.object({
     contentText: z.string().optional(),
     sourceRef: z.string().optional(),
     assets: z.array(z.object({
-      storageKey: z.string(),
+      storageKey: z.string().refine(isQuestionImagePathname, "storageKey deve ser um caminho do armazenamento (questions/...)"),
       caption: z.string().optional(),
       pageHint: z.number().int().optional(),
     })).optional(),
@@ -40,7 +42,7 @@ const Schema = z.object({
   onConflict: z.enum(["UPSERT","SKIP","ERROR"]).default("UPSERT")
 });
 
-export async function POST(req: NextRequest) {
+export const POST = defineRoute({ perm: "question.batch" }, async (req) => {
   const { items, onConflict } = Schema.parse(await req.json());
   const errors: { index: number; message: string }[] = [];
   let ok = 0, skipped = 0;
@@ -123,19 +125,19 @@ export async function POST(req: NextRequest) {
           } : undefined,
           fr: it.isDiscursive && it.fr ? {
             create: {
-              maxScore: it.fr.maxScore as any,
+              maxScore: it.fr.maxScore,
               answerGuidanceHtml: it.fr.answerGuidanceHtml,
               expectedAnswers: it.fr.expectedAnswers?.length ? { create: it.fr.expectedAnswers } : undefined,
-              rubrics: it.fr.rubrics?.length ? { create: it.fr.rubrics as any } : undefined
+              rubrics: it.fr.rubrics?.length ? { create: it.fr.rubrics } : undefined
             }
           } : undefined
         }
       });
       ok++;
-    } catch (e:any) {
-      errors.push({ index: i, message: e.message });
+    } catch (e) {
+      errors.push({ index: i, message: e instanceof Error ? e.message : String(e) });
     }
   }
 
   return NextResponse.json({ summary: { ok, skipped, errors: errors.length }, errors });
-}
+});

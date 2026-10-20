@@ -10,8 +10,9 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import type { Subscription, Plan, User } from "@/generated/prisma";
+import type { Subscription, Plan, User } from "@/generated/prisma/client";
 import { headers } from "next/headers";
+import { PLAN_AUDIENCE_LABEL } from "@/lib/plan-labels";
 
 export const dynamic = "force-dynamic";
 
@@ -25,7 +26,7 @@ export default async function AdminSubscriptionsPage() {
     emailVerified: true,
     blockSuspended: true,
     blockDeleted: true,
-    // requiredRoles: ["ADMIN"],
+    perm: ["subscription.read", "subscription.manage"],
     onForbiddenRedirect: "/dashboard",
   });
 
@@ -127,18 +128,12 @@ export default async function AdminSubscriptionsPage() {
                       <p className="text-xs text-muted-foreground">
                         Plano:{" "}
                         <span className="font-semibold">
-                          {sub.plan?.label ??
-                            sub.planKey ??
-                            "Sem plano"}
+                          {sub.plan?.label ?? "Sem plano"}
                         </span>{" "}
-                        {sub.plan?.type && (
+                        {sub.plan && (
                           <span className="text-[11px]">
                             {" · "}
-                            {sub.plan.type === "student"
-                              ? "Aluno"
-                              : sub.plan.type === "teacher"
-                                ? "Professor"
-                                : "Escola"}
+                            {PLAN_AUDIENCE_LABEL[sub.plan.audience]}
                           </span>
                         )}
                       </p>

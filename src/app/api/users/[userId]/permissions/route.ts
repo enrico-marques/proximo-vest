@@ -1,118 +1,97 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { defineRoute } from "@/server/auth/define-route";
 
 // Body do PUT
 const BodySchema = z.object({
   permissionIds: z.array(z.string()).min(0),
 });
 
-type RouteContext = {
-  params: Promise<{ userId: string }>;
-};
 
-import { requireAPIAuth } from "@/utils/access";
 
 // -------- GET: retorna permissões que o usuário tem diretamente + lista completa --------
-export async function GET(req: NextRequest, context: RouteContext) {
-  await requireAPIAuth({ perm: "user.read", emailVerified: true, blockSuspended: true, blockDeleted: true });
-  try {
-    const { userId } = await context.params;
+export const GET = defineRoute<{ userId: string }>({ perm: "user.read" }, async (req, context) => {
+  const { userId } = await context.params;
 
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      include: {
-        directPerms: {
-          include: {
-            permission: true,
-          },
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    include: {
+      directPerms: {
+        include: {
+          permission: true,
         },
       },
-    });
+    },
+  });
 
-    if (!user) {
-      return NextResponse.json(
-        { error: { message: "Usuário não encontrado." } },
-        { status: 404 }
-      );
-    }
-
-    const allPermissions = await prisma.permission.findMany({
-      where: { isActive: true },
-      orderBy: [{ resource: "asc" }, { action: "asc" }],
-    });
-
-    const grantedIds = user.directPerms
-      .filter((up) => up.granted)
-      .map((up) => up.permissionId);
-
-    return NextResponse.json({
-      user: {
-        id: user.id,
-        email: user.email,
-      },
-      permissionIds: grantedIds,
-      allPermissions,
-    });
-  } catch (e: any) {
-    console.error(e);
+  if (!user) {
     return NextResponse.json(
-      { error: { message: e.message } },
-      { status: 400 }
+      { error: { message: "Usuário não encontrado." } },
+      { status: 404 }
     );
   }
-}
+
+  const allPermissions = await prisma.permission.findMany({
+    where: { isActive: true },
+    orderBy: [{ resource: "asc" }, { action: "asc" }],
+  });
+
+  const grantedIds = user.directPerms
+    .filter((up) => up.granted)
+    .map((up) => up.permissionId);
+
+  return NextResponse.json({
+    user: {
+      id: user.id,
+      email: user.email,
+    },
+    permissionIds: grantedIds,
+    allPermissions,
+  });
+});
 
 // -------- PUT: atualiza overrides diretos (UserPermission) --------
-export async function PUT(req: NextRequest, context: RouteContext) {
-  await requireAPIAuth({ perm: "user.access.update", emailVerified: true, blockSuspended: true, blockDeleted: true });
-  try {
-    const { userId } = await context.params;
+export const PUT = defineRoute<{ userId: string }>({ perm: "user.access.update" }, async (req, context) => {
+  const { userId } = await context.params;
 
-    const body = await req.json();
-    const { permissionIds } = BodySchema.parse(body);
+  const body = await req.json();
+  const { permissionIds } = BodySchema.parse(body);
 
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-    });
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+  });
 
-    if (!user) {
-      return NextResponse.json(
-        { error: { message: "Usuário não encontrado." } },
-        { status: 404 }
-      );
-    }
-
-    // Estratégia simples: limpa overrides e recria apenas os "granted"
-    await prisma.userPermission.deleteMany({
-      where: { userId },
-    });
-
-    if (permissionIds.length > 0) {
-      await prisma.userPermission.createMany({
-        data: permissionIds.map((permissionId) => ({
-          userId,
-          permissionId,
-          granted: true,
-        })),
-      });
-    }
-
-    const updated = await prisma.user.findUnique({
-      where: { id: userId },
-      include: {
-        directPerms: {
-          include: { permission: true },
-        },
-      },
-    });
-
-    return NextResponse.json(updated);
-  } catch (e: any) {
-    console.error(e);
+  if (!user) {
     return NextResponse.json(
-      { error: { message: e.message } },
-      { status: 400 }
+      { error: { message: "Usuário não encontrado." } },
+      { status: 404 }
     );
   }
-}
+
+  // Estratégia simples: limpa overrides e recria apenas os "granted"
+  await prisma.userPermission.deleteMany({
+    where: { userId },
+  });
+
+  if (permissionIds.length > 0) {
+    await prisma.userPermission.createMany({
+      data: permissionIds.map((permissionId) => ({
+        userId,
+        permissionId,
+        granted: true,
+      })),
+    });
+  }
+
+  const updated = await prisma.user.findUnique({
+    where: { id: userId },
+    include: {
+      directPerms: {
+        include: { permission: true },
+      },
+    },
+  });
+
+  return NextResponse.json(updated);
+});

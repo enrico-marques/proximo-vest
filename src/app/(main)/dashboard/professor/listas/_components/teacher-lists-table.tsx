@@ -37,6 +37,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { MoreHorizontal, Plus } from "lucide-react";
+import { readApiError, errorMessage } from "@/lib/api-error";
 
 type TeacherListDTO = {
   id: string;
@@ -48,31 +49,41 @@ type TeacherListDTO = {
   questionsCount: number;
 };
 
+async function requestLists() {
+  const res = await fetch("/api/teacher-lists");
+  if (!res.ok) throw new Error("Erro ao carregar listas");
+  return (await res.json()) as TeacherListDTO[];
+}
+
 export function TeacherListsTable() {
   const router = useRouter();
   const [lists, setLists] = useState<TeacherListDTO[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isRefreshing, setIsRefreshing] = useState(false);
+  // Starts true: the first load runs on mount.
+  const [isRefreshing, setIsRefreshing] = useState(true);
 
-  async function fetchLists() {
-    try {
-      setIsRefreshing(true);
-      const res = await fetch("/api/teacher-lists");
-      if (!res.ok) throw new Error("Erro ao carregar listas");
-      const data = (await res.json()) as TeacherListDTO[];
-      setLists(data);
-    } catch (err) {
-      console.error(err);
-      toast.error("Não foi possível carregar as listas.");
-    } finally {
-      setIsLoading(false);
-      setIsRefreshing(false);
-    }
+  // State is only set in promise callbacks, so this can start from an effect.
+  function fetchLists() {
+    return requestLists()
+      .then(setLists)
+      .catch((err) => {
+        console.error(err);
+        toast.error("Não foi possível carregar as listas.");
+      })
+      .finally(() => {
+        setIsLoading(false);
+        setIsRefreshing(false);
+      });
   }
 
   useEffect(() => {
     fetchLists();
   }, []);
+
+  function refreshLists() {
+    setIsRefreshing(true);
+    return fetchLists();
+  }
 
   async function handleDuplicate(id: string) {
     try {
@@ -81,16 +92,14 @@ export function TeacherListsTable() {
       });
 
       if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        const msg = body?.error ?? "Erro ao duplicar lista.";
-        throw new Error(msg);
+        throw new Error(await readApiError(res, "Erro ao duplicar lista."));
       }
 
       toast.success("Lista duplicada com sucesso.");
-      await fetchLists();
-    } catch (err: any) {
+      await refreshLists();
+    } catch (err) {
       console.error(err);
-      toast.error(err.message || "Erro ao duplicar lista.");
+      toast.error(errorMessage(err) || "Erro ao duplicar lista.");
     }
   }
 
@@ -101,16 +110,14 @@ export function TeacherListsTable() {
       });
 
       if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        const msg = body?.error ?? "Erro ao excluir lista.";
-        throw new Error(msg);
+        throw new Error(await readApiError(res, "Erro ao excluir lista."));
       }
 
       toast.success("Lista excluída.");
       setLists((prev) => prev.filter((l) => l.id !== id));
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
-      toast.error(err.message || "Erro ao excluir lista.");
+      toast.error(errorMessage(err) || "Erro ao excluir lista.");
     }
   }
 
@@ -139,7 +146,7 @@ export function TeacherListsTable() {
         <Button
           variant="outline"
           size="sm"
-          onClick={fetchLists}
+          onClick={refreshLists}
           disabled={isRefreshing}
         >
           {isRefreshing ? "Atualizando..." : "Atualizar"}

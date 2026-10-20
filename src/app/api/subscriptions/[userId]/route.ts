@@ -1,80 +1,41 @@
-// app/api/admin/subscriptions/[userId]/route.ts
 import { NextResponse } from "next/server";
+import { z } from "zod";
+
+import { defineRoute, HttpError } from "@/server/auth/define-route";
 import { prisma } from "@/lib/prisma";
-import { requireAPIAuth } from "@/utils/access";
 
+const include = {
+  user: { select: { id: true, email: true, name: true } },
+  plan: true,
+} as const;
 
+export const GET = defineRoute<{ userId: string }>(
+  { perm: ["subscription.read", "subscription.manage"] },
+  async (_req, { params }) => {
+    const subscription = await prisma.subscription.findUnique({ where: { userId: params.userId }, include });
+    if (!subscription) throw new HttpError(404, "Assinatura não encontrada");
+    return NextResponse.json(subscription);
+  },
+);
 
-export async function GET(_req: Request,  { params }: { params: Promise<{ userId: string }> }) {
-  await requireAPIAuth({
-    emailVerified: true,
-    blockSuspended: true,
-    blockDeleted: true,
-    // requiredRoles: ["ADMIN"],
-  });
+const updateSchema = z.object({
+  planId: z.string().min(1).optional(),
+  status: z.enum(["ACTIVE", "CANCEL_AT_PERIOD_END", "CANCELED", "EXPIRED"]).optional(),
+  stripeSubscriptionId: z.string().trim().min(1).nullable().optional(),
+  expiresAt: z.coerce.date().nullable().optional(),
+});
 
-  const { userId } = await params;
+export const PUT = defineRoute<{ userId: string }>({ perm: "subscription.manage" }, async (req, { params }) => {
+  const input = updateSchema.parse(await req.json());
 
-  const subscription = await prisma.subscription.findUnique({
-    where: { userId },
-    include: {
-      user: { select: { id: true, email: true, name: true } },
-      plan: true,
-    },
-  });
-
-  if (!subscription) {
-    return new NextResponse("Not found", { status: 404 });
-  }
-
-  return NextResponse.json(subscription);
-}
-
-export async function PUT(req: Request,  { params }: { params: Promise<{ userId: string }> }) {
-  await requireAPIAuth({
-    emailVerified: true,
-    blockSuspended: true,
-    blockDeleted: true,
-    // requiredRoles: ["ADMIN"],
-  });
-
-  const { userId } = await params;
-
-  const body = await req.json();
-
-  const {
-    planKey,
-    status,
-    stripeSubscriptionId,
-    expiresAt,
-  } = body as {
-    planKey?: string | null;
-    status?: "ACTIVE" | "CANCEL_AT_PERIOD_END" | "CANCELED" | "EXPIRED";
-    stripeSubscriptionId?: string | null;
-    expiresAt?: string | null;
-  };
+  // Only the fields that were sent are written; undefined never reaches the query.
+  const data = Object.fromEntries(Object.entries(input).filter(([, v]) => v !== undefined));
 
   const subscription = await prisma.subscription.update({
-    where: { userId },
-    data: {
-      planKey: planKey ?? undefined,
-      status: status ?? undefined,
-      stripeSubscriptionId:
-        stripeSubscriptionId === null
-          ? null
-          : stripeSubscriptionId ?? undefined,
-      expiresAt:
-        expiresAt === null
-          ? null
-          : expiresAt
-            ? new Date(expiresAt)
-            : undefined,
-    },
-    include: {
-      user: { select: { id: true, email: true, name: true } },
-      plan: true,
-    },
+    where: { userId: params.userId },
+    data,
+    include,
   });
 
   return NextResponse.json(subscription);
-}
+});

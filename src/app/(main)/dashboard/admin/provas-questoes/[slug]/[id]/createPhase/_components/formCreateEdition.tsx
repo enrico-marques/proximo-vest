@@ -28,6 +28,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { apiErrorMessage } from "@/lib/api-error";
 
 const FormSchema = z.object({
   examEditionId: z.number(),
@@ -77,7 +78,7 @@ console.log(id)
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         console.error(err);
-        toast.error(err?.error || "Erro ao criar fase");
+        toast.error(apiErrorMessage(err, "Erro ao criar fase"));
         return;
       }
 

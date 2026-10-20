@@ -1,18 +1,20 @@
 "use client";
 
 import * as React from "react";
-import type { Table } from "@tanstack/react-table";
+import type { RowData } from "@tanstack/react-table";
+
+import type { DataTableInstance } from "./use-data-table";
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-interface DataTablePaginationProps<TData> {
-  table: Table<TData>;
+interface DataTablePaginationProps<TData extends RowData> {
+  table: DataTableInstance<TData>;
 }
 
-export function DataTablePagination<TData>({ table }: DataTablePaginationProps<TData>) {
-  const pagination = table.getState().pagination;
+export function DataTablePagination<TData extends RowData>({ table }: DataTablePaginationProps<TData>) {
+  const pagination = table.state.pagination;
   const pageIndex = pagination.pageIndex;
   const pageSize = pagination.pageSize;
   const pageCount = table.getPageCount();

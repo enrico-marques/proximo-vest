@@ -8,9 +8,10 @@ import {
   CardContent,
 } from "@/components/ui/card";
 import { notFound } from "next/navigation";
-import type { Subscription, Plan, User } from "@/generated/prisma";
+import type { Subscription, Plan, User } from "@/generated/prisma/client";
 import { AdminSubscriptionForm } from "./_components/admin-subscription-form";
 import { headers } from "next/headers";
+import { listPlans } from "@/server/plans";
 
 type SubscriptionWithRelations = Subscription & {
   user: Pick<User, "id" | "email" | "name">;
@@ -26,16 +27,14 @@ export default async function AdminSubscriptionEditPage({
     emailVerified: true,
     blockSuspended: true,
     blockDeleted: true,
-    // requiredRoles: ["ADMIN"],
+    perm: "subscription.manage",
     onForbiddenRedirect: "/dashboard",
   });
 
   const { userId } = await params;
   const headersList = headers();
 
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "";
-
-  const [subRes, plansRes] = await Promise.all([
+  const [subRes, plans] = await Promise.all([
     fetch(`${process.env.API_URL}/subscriptions/${userId}`, {
       cache: "no-store",
       headers: {
@@ -43,13 +42,7 @@ export default async function AdminSubscriptionEditPage({
         cookie: (await headersList).get("cookie") ?? "",
       },
     }),
-    fetch(`${process.env.API_URL}/plans/available`, {
-      cache: "no-store",
-      headers: {
-        // encaminha os cookies da requisição atual pra sua API interna
-        cookie: (await headersList).get("cookie") ?? "",
-      },
-    }),
+    listPlans({ includeInactive: true }),
   ]);
 
   if (subRes.status === 404) {
@@ -60,13 +53,8 @@ export default async function AdminSubscriptionEditPage({
     throw new Error("Erro ao carregar assinatura");
   }
 
-  if (!plansRes.ok) {
-    throw new Error("Erro ao carregar planos");
-  }
-
   const subscription =
     (await subRes.json()) as SubscriptionWithRelations;
-  const plans = (await plansRes.json()) as Plan[];
 
   return (
     <div className="max-w-2xl">

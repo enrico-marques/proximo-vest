@@ -5,6 +5,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/com
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
+import { errorMessage } from "@/lib/api-error";
 
 type SessionInfo = {
   id: string;
@@ -15,22 +16,24 @@ type SessionInfo = {
   userAgent?: string;
 };
 
+async function requestSessions() {
+  const res = await fetch("/api/auth/sessions");
+  if (!res.ok) throw new Error("Erro ao carregar sessões");
+  return (await res.json()) as SessionInfo[];
+}
+
 export function SessionsPanel() {
   const [sessions, setSessions] = useState<SessionInfo[] | null>(null);
-  const [loading, setLoading] = useState(false);
+  // Starts true: the first load runs on mount.
+  const [loading, setLoading] = useState(true);
   const [closing, setClosing] = useState(false);
 
-  async function load() {
-    setLoading(true);
-    try {
-      const res = await fetch("/api/auth/sessions");
-      if (!res.ok) throw new Error("Erro ao carregar sessões");
-      setSessions(await res.json());
-    } catch (e: any) {
-      toast.error(e.message);
-    } finally {
-      setLoading(false);
-    }
+  // State is only set in promise callbacks, so this can start from an effect.
+  function load() {
+    return requestSessions()
+      .then(setSessions)
+      .catch((e) => toast.error(errorMessage(e)))
+      .finally(() => setLoading(false));
   }
 
   async function closeOtherSessions() {
@@ -39,9 +42,10 @@ export function SessionsPanel() {
       const res = await fetch("/api/auth/sessions", { method: "POST" });
       if (!res.ok) throw new Error("Erro ao encerrar sessões");
       toast.success("Outras sessões foram encerradas.");
+      setLoading(true);
       load();
-    } catch (e: any) {
-      toast.error(e.message);
+    } catch (e) {
+      toast.error(errorMessage(e));
     } finally {
       setClosing(false);
     }
