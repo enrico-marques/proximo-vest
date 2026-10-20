@@ -1,6 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
 import { E2E_USER } from "./fixtures";
+import { asClient } from "./helpers";
 
 async function submitLogin(page: Page, email: string, password: string) {
   await page.goto("/auth/login");
@@ -10,6 +11,8 @@ async function submitLogin(page: Page, email: string, password: string) {
 }
 
 test.describe("login", () => {
+  test.use(asClient("10.0.0.1"));
+
   test("signs in with e-mail and password and reaches the dashboard", async ({ page }) => {
     await submitLogin(page, E2E_USER.email, E2E_USER.password);
 
@@ -32,5 +35,17 @@ test.describe("login", () => {
   test("sends anonymous visitors from the dashboard to the login page", async ({ page }) => {
     await page.goto("/dashboard/professor/listas");
     await expect(page).toHaveURL(/\/auth\/login$/);
+  });
+});
+
+test.describe("sign-in rate limit", () => {
+  test.use(asClient("10.0.0.99"));
+
+  test("blocks a fourth attempt from the same client within 10 seconds", async ({ request }) => {
+    const attempt = () =>
+      request.post("/api/auth/sign-in/email", { data: { email: E2E_USER.email, password: "chute-errado-1" } });
+
+    for (let i = 0; i < 3; i++) expect((await attempt()).status()).toBe(401);
+    expect((await attempt()).status()).toBe(429);
   });
 });

@@ -14,6 +14,8 @@ export default defineConfig({
   testDir: "tests/e2e",
   forbidOnly: isCI,
   retries: isCI ? 2 : 0,
+  // The local `prisma dev` database (PGlite) crashes under parallel load; CI uses real Postgres.
+  workers: isCI ? undefined : 1,
   reporter: isCI ? [["github"], ["html", { open: "never" }]] : "list",
   globalSetup: "./tests/e2e/global-setup.ts",
   use: {
