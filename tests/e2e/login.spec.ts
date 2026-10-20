@@ -17,6 +17,10 @@ test.describe("login", () => {
     await submitLogin(page, E2E_USER.email, E2E_USER.password);
 
     await expect(page).toHaveURL(/\/dashboard(\/|$)/);
+    await expect(page.getByRole("heading", { name: "Olá, Aluno!" })).toBeVisible();
+    // Students see only the shortcuts their permissions allow.
+    await expect(page.getByText("Minha conta", { exact: true })).toBeVisible();
+    await expect(page.getByText("Listas de exercícios")).toHaveCount(0);
 
     // The browser now holds a real session that the server accepts.
     const me = await page.request.get("/api/auth/me");

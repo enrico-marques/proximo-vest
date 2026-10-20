@@ -110,10 +110,10 @@ export const sidebarItems: NavGroup[] = [
   },
   {
     id: 2,
-    label: "Dashboards",
+    label: "Geral",
     items: [
       {
-        title: "Default",
+        title: "Início",
         url: "/dashboard/default",
         icon: LayoutDashboard,
       },
