@@ -1,11 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import Stripe from "stripe";
+import { getStripe } from "@/lib/stripe";
+import type Stripe from "stripe";
 import { defineRoute } from "@/server/auth/define-route";
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2025-10-29.clover",
-});
 
 export const POST = defineRoute({}, async (req, { user }) => {
   const body = await req.json();
@@ -61,7 +58,7 @@ export const POST = defineRoute({}, async (req, { user }) => {
 
   // Se ainda não existir, cria um customer novo
   if (!customerId) {
-    const customer = await stripe.customers.create({
+    const customer = await getStripe().customers.create({
       email: user.email,
       name: user.name,
     });
@@ -129,7 +126,7 @@ export const POST = defineRoute({}, async (req, { user }) => {
     params.discounts = [{ coupon: couponCode }];
   }
 
-  const checkout = await stripe.checkout.sessions.create(params);
+  const checkout = await getStripe().checkout.sessions.create(params);
 
   return NextResponse.json({ url: checkout.url });
 });

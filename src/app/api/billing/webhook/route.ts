@@ -1,15 +1,11 @@
-import Stripe from "stripe";
+import type Stripe from "stripe";
 import { NextResponse } from "next/server";
 import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
+import { getStripe } from "@/lib/stripe";
 import { defineRoute } from "@/server/auth/define-route";
 
 export const runtime = "nodejs";
-
-// Use uma apiVersion real e estável (ou remova para usar a do dashboard)
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2025-10-29.clover",
-});
 
 type BillingInterval = "MONTH" | "YEAR";
 
@@ -64,7 +60,7 @@ async function handleEvent(event: Stripe.Event) {
       let expiresAt: Date | null = null;
       if (stripeSubscriptionId) {
         try {
-          const sub: any = await stripe.subscriptions.retrieve(
+          const sub: any = await getStripe().subscriptions.retrieve(
             stripeSubscriptionId
           );
 
@@ -265,7 +261,7 @@ export const POST = defineRoute("public", async (req) => {
   let event: Stripe.Event;
 
   try {
-    event = stripe.webhooks.constructEvent(
+    event = getStripe().webhooks.constructEvent(
       body,
       signature,
       process.env.STRIPE_WEBHOOK_SECRET!

@@ -18,6 +18,8 @@ vi.mock("stripe", () => ({
 vi.mock("@/lib/auth", () => ({ auth: { api: { getSession: vi.fn() } } }));
 vi.mock("@/lib/prisma", () => ({ prisma: db }));
 
+process.env.STRIPE_SECRET_KEY = "sk_test_unit";
+
 const { POST } = await import("@/app/api/billing/webhook/route");
 
 const EVENT = {

@@ -1,12 +1,8 @@
 import { NextResponse } from "next/server";
-import Stripe from "stripe";
 
 import { prisma } from "@/lib/prisma";
+import { getStripe } from "@/lib/stripe";
 import { defineRoute } from "@/server/auth/define-route";
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2025-10-29.clover",
-});
 
 export const POST = defineRoute({}, async (_req, { user }) => {
   const userId = user.id;
@@ -30,7 +26,7 @@ export const POST = defineRoute({}, async (_req, { user }) => {
     process.env.NEXT_PUBLIC_APP_URL?.concat("/dashboard/assinatura") ??
     "http://localhost:3000/dashboard/assinatura";
 
-  const portalSession = await stripe.billingPortal.sessions.create({
+  const portalSession = await getStripe().billingPortal.sessions.create({
     customer: subscription.stripeCustomerId,
     return_url: returnUrl,
   });
