@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "../../../../lib/prisma";
 import { z } from "zod";
+import { isQuestionImagePathname } from "@/lib/blob";
 
 import { readBody, tryCatch, badRequest } from "../../../api/_utils";
 import { defineRoute } from "@/server/auth/define-route";
@@ -9,7 +10,7 @@ import { defineRoute } from "@/server/auth/define-route";
 const OptionKey = z.enum(["A", "B", "C", "D", "E"]);
 
 const StimulusAsset = z.object({
-  storageKey: z.string(),
+  storageKey: z.string().refine(isQuestionImagePathname, "storageKey deve ser um caminho do armazenamento (questions/...)"),
   caption: z.string().optional(),
   pageHint: z.number().int().optional(),
 });

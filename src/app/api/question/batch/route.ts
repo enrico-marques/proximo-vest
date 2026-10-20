@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "../../../../lib/prisma";
 import { z } from "zod";
+import { isQuestionImagePathname } from "@/lib/blob";
 import { defineRoute } from "@/server/auth/define-route";
 
 const OptionKey = z.enum(["A","B","C","D","E"]);
@@ -15,7 +16,7 @@ const ItemSchema = z.object({
     contentText: z.string().optional(),
     sourceRef: z.string().optional(),
     assets: z.array(z.object({
-      storageKey: z.string(),
+      storageKey: z.string().refine(isQuestionImagePathname, "storageKey deve ser um caminho do armazenamento (questions/...)"),
       caption: z.string().optional(),
       pageHint: z.number().int().optional(),
     })).optional(),

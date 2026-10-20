@@ -159,7 +159,7 @@ model Stimulus {
 model StimulusAsset {
   id         Int     @id @default(autoincrement())
   stimulusId Int
-  storageKey String // ex.: s3://... ou /cdn/...
+  storageKey String // pathname in the blob store, e.g. questions/abc-123.png (URL built in src/lib/blob.ts)
   caption    String?
   pageHint   Int?
 
