@@ -2,12 +2,17 @@
 "use client";
 
 import React from "react";
-import ReactMarkdown from "react-markdown";
+import ReactMarkdown, { defaultUrlTransform } from "react-markdown";
 import remarkGfm from "remark-gfm";
 
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { resolveStorageUrl } from "@/lib/blob";
+
 import { QuestionDTO } from "./types";
+
+// Question markdown stores images as "storage:<pathname>"; resolve them before the default URL sanitizing.
+const questionUrlTransform = (url: string) => defaultUrlTransform(resolveStorageUrl(url));
 
 type Props = {
   question: QuestionDTO;
@@ -73,6 +78,7 @@ export function QuestionViewer({ question }: Props) {
           >
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
+              urlTransform={questionUrlTransform}
               skipHtml={false}
               components={{
                 p: ({ node, ...props }: any) => (
@@ -121,6 +127,7 @@ export function QuestionViewer({ question }: Props) {
                   >
                     <ReactMarkdown
                       remarkPlugins={[remarkGfm]}
+                      urlTransform={questionUrlTransform}
                       skipHtml={false}
                       components={{
                         p: ({ node, ...props }: any) => (

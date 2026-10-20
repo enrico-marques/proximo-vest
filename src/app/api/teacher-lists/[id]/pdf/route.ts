@@ -1,6 +1,7 @@
 // app/api/teacher-lists/[id]/pdf/route.ts
 import { NextResponse } from "next/server";
 import PDFDocument from "pdfkit";
+import { isBlobUrl, resolveStorageUrl } from "@/lib/blob";
 import { prisma } from "@/lib/prisma";
 import { defineRoute } from "@/server/auth/define-route";
 
@@ -96,11 +97,16 @@ async function drawMarkdownBlock(
     }
 
     // IMAGEM
-    const src = part.src.trim();
-    if (!src) continue;
+    if (!part.src.trim()) continue;
 
     try {
-      // baixa a imagem
+      const src = resolveStorageUrl(part.src.trim());
+      // Question markdown is user-authored: only our blob store may be fetched by the server.
+      if (!isBlobUrl(src)) {
+        console.warn("[PDF] Imagem fora do armazenamento ignorada:", src);
+        continue;
+      }
+
       const res = await fetch(src);
       if (!res.ok) {
         // apenas loga, não quebra o PDF
@@ -133,7 +139,7 @@ async function drawMarkdownBlock(
       // eslint-disable-next-line no-console
       console.error(
         "[PDF] Erro ao desenhar imagem:",
-        src,
+        part.src,
         err instanceof Error ? err.message : err,
       );
       // segue a vida, não vamos quebrar o PDF por causa disso

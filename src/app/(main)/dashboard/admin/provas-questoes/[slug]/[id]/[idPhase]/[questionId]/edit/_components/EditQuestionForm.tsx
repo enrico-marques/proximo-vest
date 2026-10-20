@@ -5,8 +5,8 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { useState, useMemo, useEffect, useCallback } from "react";
 import dynamic from "next/dynamic";
-import MarkdownIt from "markdown-it";
-import { useUploadFile } from "@better-upload/client";
+import { createQuestionMarkdown } from "@/lib/markdown";
+import { useQuestionImageUpload } from "@/components/questions/use-question-image-upload";
 import "react-markdown-editor-lite/lib/index.css";
 
 const MdEditor = dynamic(() => import("react-markdown-editor-lite"), {
@@ -44,11 +44,7 @@ import { AlertTriangle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { sl } from "date-fns/locale";
 
-const mdParser = new MarkdownIt({
-  html: true,
-  linkify: true,
-  breaks: true,
-});
+const mdParser = createQuestionMarkdown();
 
 // ---------- Tipos auxiliares ----------
 
@@ -264,21 +260,15 @@ export function EditQuestionForm({
 
   const hasOptionE = effectiveOptionCount === 5;
 
-  const { uploadAsync, isPending: isUploadingImage } = useUploadFile({
-    route: "markdown-images",
-  });
+  const { uploadImage, isUploading: isUploadingImage } = useQuestionImageUpload();
 
   const handleMarkdownImageUpload = async (file: File): Promise<string> => {
-    const uploaded = (await uploadAsync(file)) as any;
-
-    if (!uploaded.file.objectInfo.key) {
-      console.error(uploaded.error);
-      throw new Error("Upload falhou: nenhuma key retornada.");
+    try {
+      return await uploadImage(file);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Não foi possível enviar a imagem.");
+      throw err;
     }
-
-    const key = uploaded.file.objectInfo.key;
-    const url = `${process.env.NEXT_PUBLIC_R2_S3_ENDPOINT!}/${key}`;
-    return url;
   };
 
   // ---------- Carregar taxonomias ----------

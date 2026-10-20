@@ -1,31 +1,23 @@
-import { route, type Router } from "@better-upload/server";
-import { toRouteHandler } from "@better-upload/server/adapters/next";
-import { cloudflare } from "@better-upload/server/clients";
+import { NextResponse } from "next/server";
+import { handleUpload, type HandleUploadBody } from "@vercel/blob/client";
 
-import { defineRoute } from "@/server/auth/define-route";
+import { HttpError, defineRoute } from "@/server/auth/define-route";
+import { questionImageTokenOptions } from "@/server/uploads/question-images";
 
-const client = cloudflare({
-  accessKeyId: process.env.R2_ACCESS_KEY_ID!,
-  secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!,
-  accountId: process.env.B2_ACCOUNT_ID!,
+// Issues client upload tokens for question images (markdown editor). No onUploadCompleted is
+// registered: the editor gets the pathname back from the upload itself, and a completion webhook
+// would have to be reachable without a session.
+export const POST = defineRoute({ perm: ["question.create", "question.update"] }, async (req) => {
+  const body = (await req.json()) as HandleUploadBody;
+  if (body?.type !== "blob.generate-client-token") {
+    throw new HttpError(400, "Requisição de upload inválida");
+  }
+
+  const result = await handleUpload({
+    body,
+    request: req,
+    onBeforeGenerateToken: async (pathname) => questionImageTokenOptions(pathname),
+  });
+
+  return NextResponse.json(result);
 });
-
-const router: Router = {
-  client,
-  bucketName: process.env.R2_BUCKET_NAME!,
-
-  routes: {
-    "markdown-images": route({
-      fileTypes: ["image/*"],
-      maxFileSize: 10 * 1024 * 1024,
-      multipleFiles: false,
-    }),
-  },
-};
-
-const handler = toRouteHandler(router);
-
-// Only question editors upload images (markdown editor in question create/edit).
-export const POST = defineRoute({ perm: ["question.create", "question.update"] }, (req) =>
-  handler.POST(req),
-);

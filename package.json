@@ -15,12 +15,11 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
-    "@better-upload/client": "^3.0.20",
-    "@better-upload/server": "^3.0.20",
     "@hookform/resolvers": "^5.9.2",
     "@prisma/adapter-pg": "^7.10.1",
     "@prisma/client": "^7.10.1",
     "@tanstack/react-table": "^9.3.1",
+    "@vercel/blob": "^2.8.2",
     "better-auth": "^1.7.11",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

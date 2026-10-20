@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import MarkdownIt from "markdown-it";
+import { createQuestionMarkdown } from "@/lib/markdown";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,11 +15,7 @@ import { requirePageAuth } from "@/utils/access";
 import { headers } from "next/headers";
 
 
-const md = new MarkdownIt({
-  html: true,
-  linkify: true,
-  breaks: true,
-});
+const md = createQuestionMarkdown();
 
 // Tipos esperados da API de questão (ajusta conforme seu backend)
 type SubjectDTO = {
