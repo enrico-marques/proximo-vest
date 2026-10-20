@@ -15,6 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
+import { readApiError } from "@/lib/api-error";
 
 type SubscriptionWithRelations = Subscription & {
   user: Pick<User, "id" | "email" | "name">;
@@ -29,10 +30,7 @@ type Props = {
 export function AdminSubscriptionForm({ subscription, plans }: Props) {
   const router = useRouter();
 
-  // plano pode ser `null` → usamos `undefined` internamente
-  const [planKey, setPlanKey] = useState<string | undefined>(
-    subscription.planKey ?? undefined
-  );
+  const [planId, setPlanId] = useState(subscription.planId);
 
   const [status, setStatus] = useState(subscription.status);
   const [stripeId, setStripeId] = useState(
@@ -43,10 +41,7 @@ export function AdminSubscriptionForm({ subscription, plans }: Props) {
   const [expiresAt, setExpiresAt] = useState(() => {
     if (!subscription.expiresAt) return "";
 
-    const date =
-      subscription.expiresAt instanceof Date
-        ? subscription.expiresAt
-        : new Date(subscription.expiresAt as any);
+    const date = new Date(subscription.expiresAt);
 
     if (Number.isNaN(date.getTime())) return "";
     return date.toISOString().slice(0, 10); // formato yyyy-mm-dd pro input[type=date]
@@ -67,8 +62,7 @@ export function AdminSubscriptionForm({ subscription, plans }: Props) {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            // se não tiver plano, mandamos null
-            planKey: planKey ?? null,
+            planId,
             status,
             stripeSubscriptionId: stripeId || null,
             expiresAt: expiresAt || null,
@@ -77,15 +71,15 @@ export function AdminSubscriptionForm({ subscription, plans }: Props) {
       );
 
       if (!res.ok) {
-        throw new Error("Erro ao atualizar assinatura");
+        throw new Error(await readApiError(res, "Erro ao atualizar assinatura"));
       }
 
       toast.success("Assinatura atualizada com sucesso!");
       router.push("/dashboard/admin/subscriptions");
       router.refresh();
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
-      toast.error(err.message || "Erro ao salvar");
+      toast.error(err instanceof Error ? err.message : "Erro ao salvar");
     } finally {
       setLoading(false);
     }
@@ -106,21 +100,14 @@ export function AdminSubscriptionForm({ subscription, plans }: Props) {
       </div>
 
       <div className="space-y-1">
-        <Label htmlFor="planKey">Plano</Label>
-        <Select
-          // se não tiver plano, usamos "__none" como valor sentinela
-          value={planKey ?? "__none"}
-          onValueChange={(val) => {
-            setPlanKey(val === "__none" ? undefined : val);
-          }}
-        >
-          <SelectTrigger id="planKey">
+        <Label htmlFor="planId">Plano</Label>
+        <Select value={planId} onValueChange={setPlanId}>
+          <SelectTrigger id="planId">
             <SelectValue placeholder="Selecione um plano" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="__none">Sem plano</SelectItem>
             {plans.map((p) => (
-              <SelectItem key={p.key} value={p.key}>
+              <SelectItem key={p.id} value={p.id}>
                 {p.label}{" "}
                 {p.monthlyPrice !== null &&
                   `- R$ ${p.monthlyPrice.toFixed(2)}/mês`}

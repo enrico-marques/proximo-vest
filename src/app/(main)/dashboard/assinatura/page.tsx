@@ -1,284 +1,182 @@
-import { requirePageAuth } from "@/utils/access";
-import { isActiveSubscription } from "@/server/subscription";
-import type { Plan } from "@/generated/prisma/client";
-import { SubscribeButton } from "@/components/billing/subscribe-button";
+import type { PlanAudience, SubscriptionStatus } from "@/generated/prisma/client";
 import { ManageSubscriptionButton } from "@/components/billing/manage-subscription-button";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-  CardFooter,
-} from "@/components/ui/card";
+import { SubscribeButton } from "@/components/billing/subscribe-button";
 import { Badge } from "@/components/ui/badge";
-import { headers } from "next/headers";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { formatLimit, formatPrice, PLAN_AUDIENCE_LABEL, PLAN_LIMITS } from "@/lib/plan-labels";
+import { getUsageSummary } from "@/server/limits";
+import { listPlans, toPublicPlan, type PublicPlan } from "@/server/plans";
+import { getUserSubscription, isActiveSubscription } from "@/server/subscription";
+import { can } from "@/utils/access-core";
+import { requirePageAuth } from "@/utils/access";
+
+const STATUS_LABEL: Record<SubscriptionStatus, string> = {
+  ACTIVE: "Ativa",
+  CANCEL_AT_PERIOD_END: "Cancelada ao fim do período",
+  CANCELED: "Cancelada",
+  EXPIRED: "Expirada",
+};
+
+function PlanLimits({ plan }: { plan: PublicPlan }) {
+  const limits = PLAN_LIMITS.filter((l) => l.audience === plan.audience);
+  if (limits.length === 0) return null;
+  return (
+    <ul className="space-y-1 text-sm">
+      {limits.map((l) => (
+        <li key={l.column} className="flex justify-between gap-2">
+          <span className="text-muted-foreground">{l.label}</span>
+          <span className="font-medium">{formatLimit(plan[l.column])}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function PlanPrice({ plan }: { plan: PublicPlan }) {
+  if (plan.monthlyPrice === null && plan.yearlyPrice === null) {
+    return <p className="text-2xl font-bold">Gratuito</p>;
+  }
+  return (
+    <div className="space-y-1">
+      {plan.monthlyPrice !== null && (
+        <p className="text-2xl font-bold">
+          {formatPrice(plan.monthlyPrice)}
+          <span className="text-muted-foreground text-sm font-normal">/mês</span>
+        </p>
+      )}
+      {plan.yearlyPrice !== null && (
+        <p className="text-muted-foreground text-sm">ou {formatPrice(plan.yearlyPrice)}/ano</p>
+      )}
+    </div>
+  );
+}
 
 export default async function AssinaturaPage() {
-  const { session, subscription, limits } = await requirePageAuth({
+  const { session, profile } = await requirePageAuth({
     emailVerified: true,
     blockSuspended: true,
     blockDeleted: true,
   });
-  const headersList = headers();
+  const userId = session.user.id;
 
-  const subscriptionActive = isActiveSubscription(subscription);
-  const currentPlanKey = subscription?.planKey ?? null;
-  const currentPlanType = subscription?.plan?.type ?? "student";
-  const billingInterval = (subscription as any)?.billingInterval ?? "MONTH";
+  // Teachers also see their teacher limits; everyone sees the student ones.
+  const audiences: PlanAudience[] = can(profile, { perm: "teacherList.manage" })
+    ? ["STUDENT", "TEACHER"]
+    : ["STUDENT"];
 
-  // Busca planos via API (sem Prisma direto na página)
-  const res = await fetch(`${process.env.API_URL}/plans/available`, {
-    cache: "no-store",
-            headers: {
-      // encaminha os cookies da requisição atual pra sua API interna
-      cookie: (await headersList).get("cookie") ?? "",
-    },
-  });
+  const [subscription, plans, ...usages] = await Promise.all([
+    getUserSubscription(userId),
+    listPlans(),
+    ...audiences.map((audience) => getUsageSummary(userId, audience)),
+  ]);
 
-  if (!res.ok) {
-    throw new Error("Erro ao carregar planos disponíveis.");
-  }
-
-  const plans = (await res.json()) as Plan[];
-
-  const currentPlanConfig = currentPlanKey
-    ? plans.find((p) => p.key === currentPlanKey) ?? null
-    : null;
-
-  // Calcula preço do plano atual conforme o intervalo
-  const currentPrice =
-    billingInterval === "YEAR"
-      ? currentPlanConfig?.yearlyPrice ?? currentPlanConfig?.monthlyPrice ?? null
-      : currentPlanConfig?.monthlyPrice ?? currentPlanConfig?.yearlyPrice ?? null;
-
-  const currentPriceSuffix = billingInterval === "YEAR" ? "/ano" : "/mês";
+  const active = isActiveSubscription(subscription);
+  const visiblePlans = plans.map(toPublicPlan).filter((p) => audiences.includes(p.audience));
 
   return (
     <div className="space-y-8">
-      {/* Cabeçalho */}
       <section>
         <h1 className="text-2xl font-bold tracking-tight">Assinatura</h1>
-        <p className="text-muted-foreground">
-          Gerencie seu plano do Próximo Vest e veja os benefícios disponíveis
-          para você.
-        </p>
+        <p className="text-muted-foreground">Seu plano, seu uso no período e os planos disponíveis.</p>
       </section>
 
-      {/* Plano atual */}
-      <section>
+      <section className="grid gap-4 md:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>Seu plano atual</CardTitle>
+            <CardTitle>Sua assinatura</CardTitle>
             <CardDescription>
-              Informações da sua assinatura vinculada a{" "}
-              <span className="font-medium">{session.user.email}</span>.
+              Vinculada a <span className="font-medium">{session.user.email}</span>.
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-2">
+          <CardContent className="space-y-2 text-sm">
             {subscription ? (
               <>
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-lg font-semibold">
-                    {currentPlanConfig?.label ?? "Plano desconhecido"}
-                  </span>
-
-                  {/* Status */}
-                  {subscription.status === "ACTIVE" && (
-                    <Badge variant="outline">Ativo</Badge>
-                  )}
-                  {subscription.status === "CANCEL_AT_PERIOD_END" && (
-                    <Badge variant="destructive">
-                      Cancelado ao fim do período
-                    </Badge>
-                  )}
-                  {subscription.status === "CANCELED" && (
-                    <Badge variant="destructive">Cancelado</Badge>
-                  )}
-                  {subscription.status === "EXPIRED" && (
-                    <Badge variant="destructive">Expirado</Badge>
-                  )}
-
-                  {/* Intervalo de cobrança */}
+                  <span className="text-lg font-semibold">{subscription.plan.label}</span>
+                  <Badge variant={active ? "outline" : "destructive"}>{STATUS_LABEL[subscription.status]}</Badge>
                   <Badge variant="outline">
-                    {billingInterval === "YEAR" ? "Plano anual" : "Plano mensal"}
+                    {subscription.billingInterval === "YEAR" ? "Cobrança anual" : "Cobrança mensal"}
                   </Badge>
                 </div>
-
-                {/* Valor do plano atual */}
-                {currentPlanConfig &&
-                currentPlanConfig.monthlyPrice === null &&
-                currentPlanConfig.yearlyPrice === null ? (
-                  <p className="text-sm text-muted-foreground">
-                    Este é um plano gratuito.
+                {subscription.expiresAt && active && (
+                  <p className="text-muted-foreground">
+                    {subscription.status === "CANCEL_AT_PERIOD_END" ? "Acesso até " : "Renova em "}
+                    <span className="font-medium">{subscription.expiresAt.toLocaleDateString("pt-BR")}</span>.
                   </p>
-                ) : currentPrice != null ? (
-                  <p className="text-sm text-muted-foreground">
-                    Valor: R$ {currentPrice.toFixed(2)}
-                    {currentPriceSuffix}
-                  </p>
-                ) : (
-                  <p className="text-sm text-muted-foreground">
-                    Não foi possível determinar o valor deste plano.
-                  </p>
-                )}
-
-                {currentPlanConfig?.description && (
-                  <p className="text-sm text-muted-foreground">
-                    {currentPlanConfig.description}
-                  </p>
-                )}
-
-                {/* mensagem de validade */}
-                {subscription.status === "CANCEL_AT_PERIOD_END" &&
-                  subscription.expiresAt && (
-                    <p className="text-xs text-muted-foreground">
-                      Sua assinatura foi cancelada, mas continuará ativa até{" "}
-                      <span className="font-medium">
-                        {subscription.expiresAt.toLocaleDateString("pt-BR")}
-                      </span>
-                      .
-                    </p>
-                  )}
-
-                {subscription.status === "ACTIVE" &&
-                  subscription.expiresAt &&
-                  subscription.expiresAt > new Date() && (
-                    <p className="text-xs text-muted-foreground">
-                      Renovação prevista para{" "}
-                      <span className="font-medium">
-                        {subscription.expiresAt.toLocaleDateString("pt-BR")}
-                      </span>
-                      .
-                    </p>
-                  )}
-
-                {/* limites do plano */}
-                {limits && (
-                  <p className="text-xs text-muted-foreground">
-                    Limites deste plano:{" "}
-                    {currentPlanType === "student" ? (
-                      <>
-                        <span className="font-medium">
-                          {limits.essayCreditsPerMonth} redações/mês
-                        </span>{" "}
-                        •{" "}
-                        {limits.unlimitedQuestions
-                          ? "questões ilimitadas"
-                          : "questões limitadas"}
-                      </>
-                    ) : currentPlanType === "teacher" ? (
-                      <>
-                        <span className="font-medium">
-                          {limits.unlimitedLists
-                            ? "listas/simulados ilimitados"
-                            : `${limits.listLimitPerMonth} listas/simulados por mês`}
-                        </span>{" "}
-                        •{" "}
-                        {limits.unlimitedQuestions
-                          ? "questões ilimitadas"
-                          : "questões limitadas"}
-                      </>
-                    ) : (
-                      <>Plano institucional / personalizado</>
-                    )}
-                  </p>
-                )}
-
-                {/* botão portal Stripe se ainda tiver acesso */}
-                {subscriptionActive && (
-                  <div className="pt-2">
-                    <ManageSubscriptionButton>
-                      Gerenciar assinatura (Stripe)
-                    </ManageSubscriptionButton>
-                  </div>
                 )}
               </>
             ) : (
-              <>
-                <p className="text-sm text-muted-foreground">
-                  Você ainda não possui uma assinatura ativa. Atualmente, está
-                  no plano padrão gratuito ou sem plano vinculado.
-                </p>
-              </>
+              <p className="text-muted-foreground">Você não tem uma assinatura paga e usa o plano gratuito.</p>
             )}
+          </CardContent>
+          {subscription?.stripeCustomerId && (
+            <CardFooter>
+              <ManageSubscriptionButton>Gerenciar assinatura</ManageSubscriptionButton>
+            </CardFooter>
+          )}
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Seu uso</CardTitle>
+            <CardDescription>Limites do plano que vale para você agora.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4 text-sm">
+            {usages.map(({ plan, usage }, i) => (
+              <div key={audiences[i]} className="space-y-1">
+                <p className="font-medium">
+                  {PLAN_AUDIENCE_LABEL[audiences[i]]}: {plan?.label ?? "nenhum plano configurado"}
+                </p>
+                <ul className="space-y-1">
+                  {usage.map((u) => (
+                    <li key={u.metric} className="flex justify-between gap-2">
+                      <span className="text-muted-foreground">{u.label}</span>
+                      <span>{u.limit === null || u.limit === 0 ? formatLimit(u.limit) : `${u.used} de ${u.limit}`}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
           </CardContent>
         </Card>
       </section>
 
-      {/* Lista de planos disponíveis */}
       <section className="space-y-4">
-        <h2 className="text-xl font-semibold">Escolha um plano</h2>
-
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {plans.map((plan) => {
-            const isCurrent = plan.key === currentPlanKey;
-            const isFree =
-              plan.monthlyPrice === null && plan.yearlyPrice === null;
-
-            return (
-              <Card
-                key={plan.id}
-                className={plan.highlight ? "border-primary shadow-sm" : ""}
-              >
-                <CardHeader>
-                  <div className="flex items-center justify-between gap-2">
-                    <CardTitle className="text-base">{plan.label}</CardTitle>
-                    {plan.highlight && <Badge>Recomendado</Badge>}
-                  </div>
-                  <CardDescription>{plan.description}</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">
-                    {isFree ? (
-                      "Gratuito"
-                    ) : plan.monthlyPrice != null ? (
-                      <>
-                        R$ {plan.monthlyPrice.toFixed(2)}{" "}
-                        <span className="text-sm font-normal text-muted-foreground">
-                          /mês
-                        </span>
-                      </>
-                    ) : plan.yearlyPrice != null ? (
-                      <>
-                        R$ {plan.yearlyPrice.toFixed(2)}{" "}
-                        <span className="text-sm font-normal text-muted-foreground">
-                          /ano
-                        </span>
-                      </>
+        <h2 className="text-xl font-semibold">Planos</h2>
+        {visiblePlans.length === 0 ? (
+          <p className="text-muted-foreground text-sm">Nenhum plano disponível no momento.</p>
+        ) : (
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {visiblePlans.map((plan) => {
+              const isCurrent = active && subscription?.planId === plan.id;
+              return (
+                <Card key={plan.id} className={plan.highlight ? "border-primary shadow-sm" : ""}>
+                  <CardHeader>
+                    <div className="flex items-center justify-between gap-2">
+                      <CardTitle className="text-base">{plan.label}</CardTitle>
+                      {plan.highlight && <Badge>Recomendado</Badge>}
+                    </div>
+                    <CardDescription>{plan.description}</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <PlanPrice plan={plan} />
+                    <PlanLimits plan={plan} />
+                  </CardContent>
+                  <CardFooter className="flex flex-wrap gap-2">
+                    {isCurrent ? (
+                      <Badge variant="outline">Plano atual</Badge>
                     ) : (
-                      "-"
+                      <>
+                        {plan.sellsMonthly && <SubscribeButton planId={plan.id} interval="MONTH" />}
+                        {plan.sellsYearly && <SubscribeButton planId={plan.id} interval="YEAR" />}
+                      </>
                     )}
-                  </div>
-
-                  {plan.yearlyPrice != null && plan.monthlyPrice != null && (
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      Também disponível no plano anual por R${" "}
-                      {plan.yearlyPrice.toFixed(2)}/ano.
-                    </p>
-                  )}
-
-                  <p className="mt-2 text-xs text-muted-foreground">
-                    Tipo:{" "}
-                    {plan.type === "student"
-                      ? "Aluno"
-                      : plan.type === "teacher"
-                      ? "Professor"
-                      : "Escola"}
-                  </p>
-                </CardContent>
-                <CardFooter className="flex justify-between items-center">
-                  {isCurrent ? (
-                    <Badge variant="outline">Plano atual</Badge>
-                  ) : (
-                    // por enquanto ainda só mensal — depois dá pra passar o intervalo aqui
-                    <SubscribeButton planKey={plan.key} />
-                  )}
-                </CardFooter>
-              </Card>
-            );
-          })}
-        </div>
+                  </CardFooter>
+                </Card>
+              );
+            })}
+          </div>
+        )}
       </section>
     </div>
   );

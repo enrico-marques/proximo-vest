@@ -41,31 +41,26 @@ enum Difficulty {
   VERY_HARD
 }
 
-// Tipo de "dono" da assinatura
-enum SubscriptionType {
+// Who a plan is sold to. A user without an active subscription for an audience falls back
+// to that audience's default plan.
+enum PlanAudience {
   STUDENT
   TEACHER
   SCHOOL
 }
 
-// Nome do plano (o "id interno" dele)
-enum SubscriptionName {
-  STUDENT_FREE
-  STUDENT_PREMIUM
-  STUDENT_ELITE
-
-  TEACHER_FREE
-  TEACHER_PREMIUM
-
-  SCHOOL_BASIC
-  SCHOOL_ADVANCED
-}
-
-// Status da assinatura
 enum SubscriptionStatus {
   ACTIVE
-  EXPIRED
+  CANCEL_AT_PERIOD_END
   CANCELED
+  EXPIRED
+}
+
+// Metered actions, each limited by one Plan column.
+enum UsageMetric {
+  ESSAY_CORRECTION // essayCreditsPerMonth
+  TEACHER_LIST // listsPerMonth
+  QUESTION_ANSWER // questionsPerDay
 }
 
 enum CouponType {
@@ -302,6 +297,7 @@ model User {
   directPerms  UserPermission[]
   status       String           @default("active") // "active", "suspended", "deleted"
   teacherLists TeacherList[]
+  usageCounters UsageCounter[]
 
   @@unique([email])
   @@map("user")
@@ -444,23 +440,30 @@ enum BillingInterval {
   YEAR
 }
 
+// Plans are data: admins create and edit them, and no code refers to a specific plan.
 model Plan {
-  id          String   @id @default(cuid())
-  key         String   @unique // ex: "STUDENT_START"
-  label       String   // ex: "Plano Start (Aluno)"
+  id          String       @id @default(cuid())
+  label       String
   description String
-  type        String   // "student" | "teacher" | "school"
+  audience    PlanAudience
 
-  // PREÇOS
-  monthlyPrice Float? // null = grátis ou só anual
-  yearlyPrice  Float? // null = se não tiver anual
+  // null = not sold on that interval
+  monthlyPrice Float?
+  yearlyPrice  Float?
 
-  // STRIPE
-  stripePriceId       String? // LEGADO: usa como preço mensal
-  stripeYearlyPriceId String? // NOVO: priceId anual
+  stripePriceId       String? @unique // monthly
+  stripeYearlyPriceId String? @unique
 
-  highlight Boolean  @default(false)
-  isActive  Boolean  @default(true)
+  // Limits: null = unlimited, 0 = not included.
+  essayCreditsPerMonth Int?
+  listsPerMonth        Int?
+  questionsPerDay      Int?
+
+  // Plan of users with no active subscription for this audience; at most one per audience.
+  isDefault Boolean @default(false)
+  highlight Boolean @default(false)
+  isActive  Boolean @default(true)
+  sortOrder Int     @default(0)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -468,27 +471,37 @@ model Plan {
   subscriptions Subscription[]
 }
 
-
-
 model Subscription {
-  id      String @id @default(cuid())
-  userId  String @unique
-  planKey String
-  plan    Plan   @relation(fields: [planKey], references: [key])
+  id     String @id @default(cuid())
+  userId String @unique
+  planId String
+  plan   Plan   @relation(fields: [planId], references: [id])
 
-  status    String // "ACTIVE" | "EXPIRED" | "CANCELED"
+  status    SubscriptionStatus
   expiresAt DateTime?
 
-  // NOVO: intervalo da assinatura
   billingInterval BillingInterval @default(MONTH)
 
   stripeCustomerId     String?
-  stripeSubscriptionId String?
+  stripeSubscriptionId String? @unique
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id])
+}
+
+// One row per user, metric and period ("2026-10" for monthly limits, "2026-10-20" for daily).
+model UsageCounter {
+  userId    String
+  metric    UsageMetric
+  period    String
+  count     Int         @default(0)
+  updatedAt DateTime    @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, metric, period])
 }
 
 // ========== Listas de Professor ==========

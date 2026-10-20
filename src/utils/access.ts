@@ -2,8 +2,6 @@ import { cache } from "react";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { getUserSubscription } from "@/server/subscription";
-import { getPlanLimits, isActiveSubscription } from "@/server/subscription";
 
 import { type AuthProfile, type PermissionKey, type RoleName, can } from "./access-core";
 
@@ -156,16 +154,5 @@ export async function requirePageAuth(opts?: {
     return redirect(onForbiddenRedirect);
   }
 
-  // -------- ASSINATURA --------
-  const subscription = await getUserSubscription(session.user.id as string);
-  const subscriptionActive = isActiveSubscription(subscription);
-  const limits = getPlanLimits(subscription?.planKey ?? null);
-
-  return {
-    session,
-    profile,
-    subscription,
-    subscriptionActive,
-    limits,
-  };
+  return { session, profile };
 }

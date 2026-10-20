@@ -24,7 +24,7 @@ export const E2E_ADMIN = {
   name: "Admin E2E",
   email: "e2e-admin@proximovest.test",
   password: E2E_PASSWORD,
-  permissions: ["examBoard.manage"],
+  permissions: ["examBoard.manage", "plan.manage"],
 };
 
 export const E2E_BOARD_SLUG = "e2e-banca";

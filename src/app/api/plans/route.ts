@@ -1,80 +1,13 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+
 import { defineRoute } from "@/server/auth/define-route";
+import { createPlan, listPlans, planInputSchema } from "@/server/plans";
 
-/**
- * GET /api/plans/available
- * Lista todos os planos ativos
- */
 export const GET = defineRoute({ perm: ["plan.read", "plan.manage"] }, async () => {
-  const plans = await prisma.plan.findMany({
-    where: {
-      isActive: true,
-    },
-    orderBy: {
-      monthlyPrice: "asc", // mantém a ordenação que você já usava
-    },
-  });
-
-  // Continua devolvendo o próprio objeto Plan do Prisma
-  return NextResponse.json(plans);
+  return NextResponse.json(await listPlans({ includeInactive: true }));
 });
 
-/**
- * POST /api/plans/available
- * Criação de um novo plano
- * Agora suporta mensal + anual + stripePriceIds
- */
 export const POST = defineRoute({ perm: "plan.manage" }, async (req) => {
-  const body = await req.json();
-
-  const {
-    key,
-    label,
-    description,
-    type,
-    monthlyPrice,
-    yearlyPrice,          // NOVO
-    highlight,
-    isActive,             // NOVO (opcional)
-    stripePriceId,        // NOVO (mensal)
-    stripeYearlyPriceId,  // NOVO (anual)
-  } = body;
-
-  // validações básicas
-  if (!key || !label || !description || !type) {
-    return NextResponse.json(
-      { error: "Campos obrigatórios faltando" },
-      { status: 400 }
-    );
-  }
-
-  // Se não for plano totalmente grátis, garante que pelo menos um preço exista
-  if (monthlyPrice == null && yearlyPrice == null) {
-    return NextResponse.json(
-      {
-        error:
-          "Defina ao menos um preço (mensal ou anual) ou ajuste a lógica para planos 100% gratuitos.",
-      },
-      { status: 400 }
-    );
-  }
-
-  const plan = await prisma.plan.create({
-    data: {
-      key,
-      label,
-      description,
-      type,
-      monthlyPrice: monthlyPrice ?? null,
-      yearlyPrice: yearlyPrice ?? null,
-      highlight: !!highlight,
-      isActive: isActive ?? true,
-      // Stripe IDs opcionais
-      stripePriceId: stripePriceId ?? null,
-      stripeYearlyPriceId: stripeYearlyPriceId ?? null,
-    },
-  });
-
-  return NextResponse.json(plan, { status: 201 });
+  const input = planInputSchema.parse(await req.json());
+  return NextResponse.json(await createPlan(input), { status: 201 });
 });

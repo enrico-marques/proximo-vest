@@ -14,7 +14,7 @@ Requisitos: Node.js 24 e um banco Postgres.
 npm install                 # também gera o Prisma Client
 cp .env.example .env.local  # preencha os valores
 npx prisma migrate deploy   # aplica as migrations
-npm run db:seed             # permissões e papéis (Admin, Professor)
+npm run db:seed             # permissões, papéis (Admin, Professor) e planos iniciais
 npm run dev
 ```
 
@@ -29,7 +29,7 @@ Papéis são atribuídos pelo admin, em **Usuários**. O seed concede `plan`, `s
 | `npm run lint` | ESLint |
 | `npm test` | Testes unitários (Vitest) |
 | `npm run test:e2e` | Testes de ponta a ponta (Playwright) |
-| `npm run db:seed` | Seed de permissões e papéis |
+| `npm run db:seed` | Seed de permissões, papéis e planos (os planos só se a tabela estiver vazia) |
 
 ## Testes
 
@@ -50,6 +50,15 @@ Papéis são atribuídos pelo admin, em **Usuários**. O seed concede `plan`, `s
 - `src/proxy.ts` redireciona visitantes sem sessão para o login, mas a checagem real fica em cada página e rota.
 - O webhook do Stripe valida a assinatura e é idempotente.
 - Login, cadastro e recuperação de senha têm rate limit por IP, guardado no banco.
+
+## Planos e limites
+
+Planos são dados, não código: nome, público (aluno, professor, escola), preços, Price IDs do Stripe, limites e plano padrão são editados em **Admin → Planos**, e nenhum trecho do código depende de um plano específico.
+
+- **Limites:** colunas do plano (questões por dia, redações por mês, listas por mês). Vazio = ilimitado; 0 = não incluso. São aplicados no servidor por `src/server/limits.ts`, com um contador por usuário e período no horário de Brasília.
+- **Plano de cada usuário:** o da assinatura ativa daquele público; sem ela, o plano marcado como padrão do público.
+- **Venda:** um preço só aparece para compra depois de ter o Price ID do Stripe. O webhook identifica o plano pelo preço pago, então renomear ou reorganizar planos não quebra assinaturas.
+- **Novo tipo de limite:** este, sim, exige código: uma coluna no `Plan` e a chamada a `consumeUsage` no ponto em que a ação acontece.
 
 ## Arquivos (Vercel Blob)
 

@@ -6,7 +6,8 @@ import { Prisma } from "@/generated/prisma/client";
 const constructEvent = vi.fn();
 const db = {
   processedStripeEvent: { create: vi.fn(), delete: vi.fn() },
-  subscription: { findFirst: vi.fn(), update: vi.fn(), upsert: vi.fn() },
+  subscription: { findUnique: vi.fn(), upsert: vi.fn() },
+  plan: { findFirst: vi.fn() },
 };
 
 vi.mock("stripe", () => ({
@@ -25,7 +26,17 @@ const { POST } = await import("@/app/api/billing/webhook/route");
 const EVENT = {
   id: "evt_123",
   type: "customer.subscription.deleted",
-  data: { object: { id: "sub_1", metadata: {} } },
+  data: {
+    object: {
+      id: "sub_1",
+      status: "canceled",
+      customer: "cus_1",
+      cancel_at: null,
+      cancel_at_period_end: false,
+      metadata: {},
+      items: { data: [{ price: { id: "price_1" }, current_period_end: 1_900_000_000 }] },
+    },
+  },
 };
 
 const deliver = () =>
@@ -43,7 +54,8 @@ beforeEach(() => {
   vi.spyOn(console, "log").mockImplementation(() => {});
   vi.spyOn(console, "error").mockImplementation(() => {});
   constructEvent.mockReturnValue(EVENT);
-  db.subscription.findFirst.mockResolvedValue({ userId: "user-1" });
+  db.subscription.findUnique.mockResolvedValue({ userId: "user-1", planId: "plan-old" });
+  db.plan.findFirst.mockResolvedValue({ id: "plan-1", stripePriceId: "price_1", stripeYearlyPriceId: null });
 });
 
 describe("Stripe webhook", () => {
@@ -56,14 +68,19 @@ describe("Stripe webhook", () => {
     expect(db.processedStripeEvent.create).not.toHaveBeenCalled();
   });
 
-  it("claims the event id and then handles the event", async () => {
+  it("claims the event id and syncs the plan from the price being paid", async () => {
     const res = await deliver();
 
     expect(res.status).toBe(200);
     expect(db.processedStripeEvent.create).toHaveBeenCalledWith({
       data: { id: "evt_123", type: "customer.subscription.deleted" },
     });
-    expect(db.subscription.update).toHaveBeenCalledTimes(1);
+    expect(db.subscription.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { userId: "user-1" },
+        update: expect.objectContaining({ planId: "plan-1", status: "CANCELED", stripeCustomerId: "cus_1" }),
+      }),
+    );
   });
 
   it("acknowledges a repeated delivery without handling it again", async () => {
@@ -78,11 +95,11 @@ describe("Stripe webhook", () => {
 
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ received: true, duplicate: true });
-    expect(db.subscription.update).not.toHaveBeenCalled();
+    expect(db.subscription.upsert).not.toHaveBeenCalled();
   });
 
   it("releases the claim when handling fails so Stripe can retry", async () => {
-    db.subscription.update.mockRejectedValue(new Error("db down"));
+    db.subscription.upsert.mockRejectedValue(new Error("db down"));
 
     const res = await deliver();
 

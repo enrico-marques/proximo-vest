@@ -1,57 +1,41 @@
 "use client";
 
 import { useTransition } from "react";
-import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
-type BillingInterval = "MONTH" | "YEAR";
+import { Button } from "@/components/ui/button";
+import { readApiError } from "@/lib/api-error";
 
 type SubscribeButtonProps = {
-  planKey: string;
-  interval?: BillingInterval; // opcional, default MONTH
+  planId: string;
+  interval: "MONTH" | "YEAR";
 };
 
-export function SubscribeButton({ planKey, interval = "MONTH" }: SubscribeButtonProps) {
+export function SubscribeButton({ planId, interval }: SubscribeButtonProps) {
   const [isLoading, start] = useTransition();
 
-  async function checkout() {
+  function checkout() {
     start(async () => {
-      try {
-        const res = await fetch("/api/billing/checkout", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            planKey,
-            interval, // <-- agora vai junto
-          }),
-        });
+      const res = await fetch("/api/billing/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ planId, interval }),
+      });
 
-        if (!res.ok) {
-          toast.error("Erro ao iniciar checkout");
-          return;
-        }
-
-        const data = await res.json();
-        if (data.url) {
-          window.location.href = data.url;
-        } else {
-          toast.error("Falha: URL não retornada");
-        }
-      } catch (err) {
-        console.error(err);
-        toast.error("Erro inesperado");
+      if (!res.ok) {
+        toast.error(await readApiError(res, "Não foi possível iniciar o pagamento."));
+        return;
       }
+
+      const { url } = (await res.json()) as { url?: string | null };
+      if (url) window.location.href = url;
+      else toast.error("Não foi possível iniciar o pagamento.");
     });
   }
 
-  const label =
-    interval === "YEAR"
-      ? "Assinar plano anual"
-      : "Assinar plano mensal";
-
   return (
-    <Button onClick={checkout} disabled={isLoading}>
-      {isLoading ? "Carregando..." : label}
+    <Button onClick={checkout} disabled={isLoading} variant={interval === "YEAR" ? "outline" : "default"}>
+      {isLoading ? "Carregando..." : interval === "YEAR" ? "Assinar anual" : "Assinar mensal"}
     </Button>
   );
 }

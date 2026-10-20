@@ -4,6 +4,7 @@ import { randomUUID } from "node:crypto";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { hashPassword } from "better-auth/crypto";
 
+import { seedPlans } from "../../prisma/seeds/plans.mts";
 import { PrismaClient } from "../../src/generated/prisma/client.ts";
 import {
   E2E_ADMIN,
@@ -53,11 +54,16 @@ async function prepareDatabase() {
   try {
     // Recreated on every run so tests never depend on leftovers. Cascades remove
     // sessions, accounts, role links, teacher lists and the board's questions.
+    // Subscriptions do not cascade with their user, so they go first.
+    await prisma.subscription.deleteMany();
     const users = [E2E_USER, E2E_TEACHER, E2E_OTHER_TEACHER, E2E_ADMIN];
     await prisma.user.deleteMany({ where: { email: { in: users.map((u) => u.email) } } });
     // Rate-limit counters survive between runs; start every run with a clean slate.
     await prisma.rateLimit.deleteMany();
     await prisma.examBoard.deleteMany({ where: { slug: { startsWith: E2E_BOARD_SLUG } } });
+    // Tests edit plans through the admin UI; restore the seed catalog so every run starts equal.
+    await prisma.plan.deleteMany();
+    await seedPlans(prisma);
 
     const professor = await prisma.role.findFirstOrThrow({
       where: { name: { equals: "Professor", mode: "insensitive" } },

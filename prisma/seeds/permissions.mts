@@ -1,10 +1,4 @@
-import "dotenv/config";
-import { PrismaPg } from "@prisma/adapter-pg";
-
-import { PrismaClient } from "../../src/generated/prisma/client.ts";
-
-const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
-const prisma = new PrismaClient({ adapter });
+import type { PrismaClient } from "../../src/generated/prisma/client.ts";
 
 const permissions = [
   { resource: "billing", action: "manage" },
@@ -75,7 +69,7 @@ const roleGrants: Record<string, string[]> = {
   Professor: ["teacherList.manage"],
 };
 
-async function findOrCreateRole(name: string) {
+async function findOrCreateRole(prisma: PrismaClient, name: string) {
   // Role names were typed by hand in the admin UI, so match case-insensitively.
   const existing = await prisma.role.findFirst({
     where: { name: { equals: name, mode: "insensitive" } },
@@ -83,9 +77,9 @@ async function findOrCreateRole(name: string) {
   return existing ?? prisma.role.create({ data: { name } });
 }
 
-async function grantRolePermissions() {
+async function grantRolePermissions(prisma: PrismaClient) {
   for (const [roleName, keys] of Object.entries(roleGrants)) {
-    const role = await findOrCreateRole(roleName);
+    const role = await findOrCreateRole(prisma, roleName);
     const perms = await prisma.permission.findMany({ where: { key: { in: keys } } });
 
     for (const perm of perms) {
@@ -99,7 +93,7 @@ async function grantRolePermissions() {
   }
 }
 
-async function main() {
+export async function seedPermissions(prisma: PrismaClient) {
   console.log("🌱 Iniciando seed de permissões...");
 
   for (const p of permissions) {
@@ -116,16 +110,7 @@ async function main() {
     });
   }
 
-  await grantRolePermissions();
+  await grantRolePermissions(prisma);
 
   console.log("✅ Permissões atualizadas/criadas com sucesso!");
 }
-
-main()
-  .catch((err) => {
-    console.error("❌ Erro no seed:", err);
-    process.exit(1);
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
-  });
