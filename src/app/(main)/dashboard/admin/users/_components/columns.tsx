@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { DataTableColumnDef } from "@/components/data-table/use-data-table";
 import { CircleCheck, Loader, EllipsisVertical } from "lucide-react";
 import { toast } from "sonner";
@@ -27,17 +28,21 @@ import {
 import { DataTableColumnHeader } from "../../../../../../components/data-table/data-table-column-header";
 
 import { sectionSchema } from "./schema";
-import { TableCellViewer } from "./table-cell-viewer";
 
 export const dashboardColumns: DataTableColumnDef<z.infer<typeof sectionSchema>>[] = [
   {
-    accessorKey: "header",
+    accessorKey: "name",
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Nome" />
     ),
-    cell: ({ row }) => {
-      return <TableCellViewer item={row.original} />;
-    },
+    cell: ({ row }) => (
+      <Link
+        className="font-medium underline-offset-2 hover:underline"
+        href={`/dashboard/admin/users/${row.original.id}/edit`}
+      >
+        {row.original.name}
+      </Link>
+    ),
     enableSorting: false,
   },
   {
