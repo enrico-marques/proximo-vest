@@ -20,4 +20,13 @@ export const E2E_OTHER_TEACHER = {
   listId: "e2e-list-other",
 };
 
+export const E2E_ADMIN = {
+  name: "Admin E2E",
+  email: "e2e-admin@proximovest.test",
+  password: E2E_PASSWORD,
+  permissions: ["examBoard.manage"],
+};
+
 export const E2E_BOARD_SLUG = "e2e-banca";
+// Extra boards so the admin table needs a second page (page size is 10).
+export const E2E_EXTRA_BOARDS = 12;
