@@ -1,6 +1,6 @@
 // app/api/teacher-lists/[id]/pdf/route.ts
 import { NextResponse } from "next/server";
-import PDFDocument from "pdfkit/js/pdfkit.standalone";
+import PDFDocument from "pdfkit";
 import { prisma } from "@/lib/prisma";
 import { defineRoute } from "@/server/auth/define-route";
 
