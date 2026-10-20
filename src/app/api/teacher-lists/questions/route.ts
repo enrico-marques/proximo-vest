@@ -1,7 +1,8 @@
 // app/api/teacher-lists/questions/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import type { Prisma } from "@/generated/prisma/client";
+import { z } from "zod";
+import { Difficulty, type Prisma } from "@/generated/prisma/client";
 import { defineRoute } from "@/server/auth/define-route";
 
 // opcional: força runtime node
@@ -20,7 +21,7 @@ export const GET = defineRoute({ perm: "teacherList.manage" }, async (req) => {
 
   // status sempre PUBLISHED
   andFilters.push({
-    status: "PUBLISHED" as any,
+    status: "PUBLISHED",
   });
 
   // disciplina
@@ -38,7 +39,7 @@ export const GET = defineRoute({ perm: "teacherList.manage" }, async (req) => {
   // dificuldade
   if (difficulty && difficulty !== "all") {
     andFilters.push({
-      difficulty: difficulty as any,
+      difficulty: z.enum(Difficulty).parse(difficulty),
     });
   }
 

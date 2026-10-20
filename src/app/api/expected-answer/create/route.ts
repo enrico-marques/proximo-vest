@@ -11,16 +11,12 @@ const Schema = z.object({
 });
 
 export const POST = defineRoute({ perm: "expectedAnswer.manage" }, async (req) => {
-  try {
-    const { questionId, label, answerHtml, maxScore } = Schema.parse(await req.json());
-    const fr = await prisma.frItem.findUnique({ where: { questionId } });
-    if (!fr) return NextResponse.json({ error: { message: "Discursive FrItem not found" } }, { status: 400 });
+  const { questionId, label, answerHtml, maxScore } = Schema.parse(await req.json());
+  const fr = await prisma.frItem.findUnique({ where: { questionId } });
+  if (!fr) return NextResponse.json({ error: { message: "Discursive FrItem not found" } }, { status: 400 });
 
-    const created = await prisma.frAnswerExpected.create({
-      data: { frItemId: questionId, label, answerHtml, maxScore: maxScore as any }
-    });
-    return NextResponse.json(created, { status: 201 });
-  } catch (e:any) {
-    return NextResponse.json({ error: { message: e.message } }, { status: 400 });
-  }
+  const created = await prisma.frAnswerExpected.create({
+    data: { frItemId: questionId, label, answerHtml, maxScore }
+  });
+  return NextResponse.json(created, { status: 201 });
 });

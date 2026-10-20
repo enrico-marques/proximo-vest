@@ -16,6 +16,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { apiErrorMessage } from "@/lib/api-error";
 
 const FormSchema = z.object({
   name: z.string().min(3, { message: "Name must be at least 3 characters." }),
@@ -65,7 +66,7 @@ export function FormCreateBoard() {
       if (!res.ok) {
         // tenta obter a mensagem de erro do servidor
         const err = await res.json().catch(() => ({}));
-        setServerError(err?.error || "Erro ao fazer login");
+        setServerError(apiErrorMessage(err, "Erro ao fazer login"));
         return;
       }
     toast.success("Prova criada com sucesso!");

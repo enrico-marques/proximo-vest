@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
+import { apiErrorMessage, errorMessage } from "@/lib/api-error";
 
 // --- Schema ---
 const roleCreateSchema = z.object({
@@ -55,7 +56,7 @@ export function CreateRoleForm() {
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data?.error || "Erro ao criar role.");
+        throw new Error(apiErrorMessage(data, "Erro ao criar role."));
       }
 
       toast.success("Role criado com sucesso!");
@@ -67,9 +68,9 @@ export function CreateRoleForm() {
       });
 
       router.push("/dashboard/admin/roles");
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
-      toast.error(err.message || "Erro inesperado ao criar role.");
+      toast.error(errorMessage(err) || "Erro inesperado ao criar role.");
     }
   }
 

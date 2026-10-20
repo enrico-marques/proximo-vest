@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 
+import { Prisma } from "@/generated/prisma/client";
 import type { AuthProfile } from "@/utils/access-core";
 
 const getSession = vi.fn();
@@ -156,6 +157,30 @@ describe("defineRoute", () => {
 
       expect(res.status).toBe(400);
       expect((await res.json()).error.issues).toHaveLength(1);
+    });
+
+    it.each([
+      ["P2025", 404],
+      ["P2002", 409],
+      ["P2003", 409],
+    ])("map Prisma %s to %i without the database message", async (code, status) => {
+      const res = await defineRoute("public", async () => {
+        throw new Prisma.PrismaClientKnownRequestError("Invalid prisma.x.update() table secret_t", {
+          code,
+          clientVersion: "test",
+        });
+      })(req(), ctx());
+
+      expect(res.status).toBe(status);
+      expect(JSON.stringify(await res.json())).not.toContain("secret");
+    });
+
+    it("map a malformed JSON body to 400", async () => {
+      const res = await defineRoute("public", async (r) => Response.json(await r.json()))(
+        new NextRequest("http://localhost/api/test", { method: "POST", body: "{nope" }),
+        ctx(),
+      );
+      expect(res.status).toBe(400);
     });
 
     it("return 500 without leaking the internal message", async () => {

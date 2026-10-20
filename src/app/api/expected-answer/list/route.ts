@@ -8,19 +8,15 @@ const Schema = z.object({
 })
 
 export const GET = defineRoute({ perm: ["expectedAnswer.read", "expectedAnswer.manage"] }, async (req) => {
-  try {
-    const { searchParams } = new URL(req.url)
-    const questionId = searchParams.get("questionId")
+  const { searchParams } = new URL(req.url)
+  const questionId = searchParams.get("questionId")
 
-    const { questionId: validatedId } = Schema.parse({ questionId })
+  const { questionId: validatedId } = Schema.parse({ questionId })
 
-    const rows = await prisma.frAnswerExpected.findMany({
-      where: { frItemId: validatedId },
-      orderBy: { id: "asc" },
-    })
+  const rows = await prisma.frAnswerExpected.findMany({
+    where: { frItemId: validatedId },
+    orderBy: { id: "asc" },
+  })
 
-    return NextResponse.json(rows)
-  } catch (e: any) {
-    return NextResponse.json({ error: { message: e.message } }, { status: 400 })
-  }
+  return NextResponse.json(rows)
 });

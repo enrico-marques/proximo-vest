@@ -4,7 +4,6 @@ import { z } from "zod";
 import {
   json,
   readBody,
-  tryCatch,
   notFound,
   badRequest,
 } from "../../../_utils";
@@ -18,15 +17,13 @@ const PatchSchema = z.object({
 });
 
 export const GET = defineRoute<Params>({ perm: ["examBoard.read", "examBoard.manage"] }, async (req, ctx) => {
-  return tryCatch(async () => {
-    const { slug } = await ctx.params;
+  const { slug } = await ctx.params;
 
-    const found = await prisma.examBoard.findUnique({
-      where: {
-        slug: slug,
-      },
-    });
-    if (!found) return notFound("ExamBoard not found");
-    return json(found);
+  const found = await prisma.examBoard.findUnique({
+    where: {
+      slug: slug,
+    },
   });
+  if (!found) return notFound("ExamBoard not found");
+  return json(found);
 });

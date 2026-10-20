@@ -3,6 +3,7 @@
 import { useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { apiErrorMessage } from "@/lib/api-error";
 
 type Props = {
   children?: React.ReactNode;
@@ -21,8 +22,7 @@ export function ManageSubscriptionButton({ children }: Props) {
         if (!res.ok) {
           const data = await res.json().catch(() => ({}));
           toast.error(
-            data.error ||
-              "Não foi possível abrir o portal de cobrança. Tente novamente."
+            apiErrorMessage(data, "Não foi possível abrir o portal de cobrança. Tente novamente.")
           );
           return;
         }

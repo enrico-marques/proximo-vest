@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { unstable_rethrow } from "next/navigation";
 import { ZodError } from "zod";
 
+import { Prisma } from "@/generated/prisma/client";
 import { auth } from "@/lib/auth";
 import { getAuthProfile } from "@/utils/access";
 import { can, type AuthProfile, type PermissionKey, type RoleName } from "@/utils/access-core";
@@ -90,11 +91,26 @@ async function authorize(
   };
 }
 
+const PRISMA_ERRORS: Record<string, [number, string]> = {
+  P2025: [404, "Registro não encontrado"],
+  P2002: [409, "Já existe um registro com esses dados"],
+  P2003: [409, "O registro está vinculado a outros dados"],
+};
+
 function toErrorResponse(err: unknown) {
   unstable_rethrow(err);
 
   if (err instanceof HttpError) {
     return NextResponse.json({ error: { message: err.message } }, { status: err.status });
+  }
+  // Known database outcomes get a client status, but never the database message itself.
+  if (err instanceof Prisma.PrismaClientKnownRequestError && err.code in PRISMA_ERRORS) {
+    const [status, message] = PRISMA_ERRORS[err.code];
+    return NextResponse.json({ error: { message } }, { status });
+  }
+  // req.json() on a malformed body is the only expected source of a SyntaxError here.
+  if (err instanceof SyntaxError) {
+    return NextResponse.json({ error: { message: "JSON inválido" } }, { status: 400 });
   }
   if (err instanceof ZodError) {
     return NextResponse.json(

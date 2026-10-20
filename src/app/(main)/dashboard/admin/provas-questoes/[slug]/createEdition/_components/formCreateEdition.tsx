@@ -16,6 +16,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { apiErrorMessage } from "@/lib/api-error";
 
 const FormSchema = z.object({
   examBoardId: z.number(),
@@ -57,7 +58,7 @@ export function FormCreateEdition({ boardId, slug }: { boardId: number; slug: st
       if (!res.ok) {
         // tenta obter a mensagem de erro do servidor
         const err = await res.json().catch(() => ({}));
-        setServerError(err?.error || "Erro ao fazer login");
+        setServerError(apiErrorMessage(err, "Erro ao fazer login"));
         return;
       }
       router.push(`/dashboard/admin/provas-questoes/${slug}`);

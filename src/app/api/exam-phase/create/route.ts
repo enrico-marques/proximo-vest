@@ -14,11 +14,7 @@ const Schema = z.object({
 });
 
 export const POST = defineRoute({ perm: "examPhase.manage" }, async (req) => {
-  try {
-    const data = Schema.parse(await req.json());
-    const created = await prisma.examPhase.create({ data });
-    return NextResponse.json(created, { status: 201 });
-  } catch (e: any) {
-    return NextResponse.json({ error: { message: e.message } }, { status: 400 });
-  }
+  const data = Schema.parse(await req.json());
+  const created = await prisma.examPhase.create({ data });
+  return NextResponse.json(created, { status: 201 });
 });

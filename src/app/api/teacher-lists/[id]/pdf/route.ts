@@ -338,7 +338,7 @@ export const GET = defineRoute<Params>({ perm: "teacherList.manage" }, async (re
   doc.end();
   const pdfBuffer = await done;
 
-  return new NextResponse(pdfBuffer as any, {
+  return new NextResponse(new Uint8Array(pdfBuffer), {
     status: 200,
     headers: {
       "Content-Type": "application/pdf",

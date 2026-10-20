@@ -125,17 +125,17 @@ export const POST = defineRoute({ perm: "question.batch" }, async (req) => {
           } : undefined,
           fr: it.isDiscursive && it.fr ? {
             create: {
-              maxScore: it.fr.maxScore as any,
+              maxScore: it.fr.maxScore,
               answerGuidanceHtml: it.fr.answerGuidanceHtml,
               expectedAnswers: it.fr.expectedAnswers?.length ? { create: it.fr.expectedAnswers } : undefined,
-              rubrics: it.fr.rubrics?.length ? { create: it.fr.rubrics as any } : undefined
+              rubrics: it.fr.rubrics?.length ? { create: it.fr.rubrics } : undefined
             }
           } : undefined
         }
       });
       ok++;
-    } catch (e:any) {
-      errors.push({ index: i, message: e.message });
+    } catch (e) {
+      errors.push({ index: i, message: e instanceof Error ? e.message : String(e) });
     }
   }
 

@@ -23,19 +23,15 @@ const PatchSchema = z.object({
 });
 
 export const PATCH = defineRoute<Params>({ perm: "examEdition.manage" }, async (req, ctx) => {
-  try {
-    const { id: idStr } = await ctx.params;
-    const id = Number(idStr);
-    if (!Number.isFinite(id)) {
-      return NextResponse.json({ error: { message: "Invalid id" } }, { status: 400 });
-    }
-
-    const data = PatchSchema.parse(await req.json());
-    const updated = await prisma.examEdition.update({ where: { id }, data });
-    return NextResponse.json(updated);
-  } catch (e: any) {
-    return NextResponse.json({ error: { message: e.message } }, { status: 400 });
+  const { id: idStr } = await ctx.params;
+  const id = Number(idStr);
+  if (!Number.isFinite(id)) {
+    return NextResponse.json({ error: { message: "Invalid id" } }, { status: 400 });
   }
+
+  const data = PatchSchema.parse(await req.json());
+  const updated = await prisma.examEdition.update({ where: { id }, data });
+  return NextResponse.json(updated);
 });
 
 export const DELETE = defineRoute<Params>({ perm: "examEdition.manage" }, async (_req, ctx) => {

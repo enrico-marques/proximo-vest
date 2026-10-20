@@ -12,28 +12,21 @@ const PatchSchema = z.object({
 });
 
 export const PATCH = defineRoute<Params>({ perm: "expectedAnswer.manage" }, async (req, ctx) => {
-  try {
-    const { id: idStr } = await ctx.params;
-    const id = Number(idStr);
-    if (!Number.isFinite(id)) {
-      return NextResponse.json(
-        { error: { message: "Invalid id" } },
-        { status: 400 }
-      );
-    }
-
-    const data = PatchSchema.parse(await req.json());
-    const updated = await prisma.frAnswerExpected.update({
-      where: { id },
-      data: { ...data, maxScore: data.maxScore as any },
-    });
-    return NextResponse.json(updated);
-  } catch (e: any) {
+  const { id: idStr } = await ctx.params;
+  const id = Number(idStr);
+  if (!Number.isFinite(id)) {
     return NextResponse.json(
-      { error: { message: e.message } },
+      { error: { message: "Invalid id" } },
       { status: 400 }
     );
   }
+
+  const data = PatchSchema.parse(await req.json());
+  const updated = await prisma.frAnswerExpected.update({
+    where: { id },
+    data,
+  });
+  return NextResponse.json(updated);
 });
 
 export const DELETE = defineRoute<Params>({ perm: "expectedAnswer.manage" }, async (_req, ctx) => {

@@ -11,11 +11,7 @@ const Schema = z.object({
 });
 
 export const POST = defineRoute({ perm: "examEdition.manage" }, async (req) => {
-  try {
-    const body = Schema.parse(await req.json());
-    const created = await prisma.examEdition.create({ data: body });
-    return NextResponse.json(created, { status: 201 });
-  } catch (e: any) {
-    return NextResponse.json({ error: { message: e.message } }, { status: 400 });
-  }
+  const body = Schema.parse(await req.json());
+  const created = await prisma.examEdition.create({ data: body });
+  return NextResponse.json(created, { status: 201 });
 });
