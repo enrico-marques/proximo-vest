@@ -261,7 +261,6 @@ export function TeacherListBuildStep({
 
   const selectedYearLabel = yearFilter === "all" ? "Todos" : yearFilter;
 
-  console.log(boards);
   return (
     <div className="flex flex-col gap-4">
       {/* Barra de configuração (estilo screenshot) */}

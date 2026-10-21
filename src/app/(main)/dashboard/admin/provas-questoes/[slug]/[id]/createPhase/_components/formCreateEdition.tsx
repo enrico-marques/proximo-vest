@@ -49,7 +49,6 @@ export function FormCreateEdition({
 }) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
-console.log(id)
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
     defaultValues: {
@@ -68,7 +67,6 @@ console.log(id)
     toast("Carregando...");
 
     try {
-      console.log(data)
       const res = await fetch(`/api/exam-phase/create`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },

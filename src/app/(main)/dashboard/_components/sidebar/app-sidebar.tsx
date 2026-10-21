@@ -34,7 +34,7 @@ export function AppSidebar({ profile, ...props }: AppSidebarProps) {
               asChild
               className="data-[slot=sidebar-menu-button]:p-1.5!"
             >
-              <Link href="/dashboard/default">
+              <Link href="/dashboard">
                 <Command />
                 <span className="text-base font-semibold">Próximo Vest</span>
               </Link>

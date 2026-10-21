@@ -5,15 +5,6 @@ const nextConfig = {
     // Keep errors and warnings: they are the only server logs until Sentry is set up.
     removeConsole: process.env.NODE_ENV === "production" ? { exclude: ["error", "warn"] } : false,
   },
-  async redirects() {
-    return [
-      {
-        source: "/dashboard",
-        destination: "/dashboard/default",
-        permanent: false,
-      },
-    ];
-  },
 }
 
 export default nextConfig

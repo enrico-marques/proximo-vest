@@ -59,7 +59,7 @@ async function handleEdit(
       headers: { "Content-Type": "application/json" },
     });
     if (!res.ok) {
-      console.log(await res.text());
+      console.error("[admin] falha ao salvar edição", res.status, await res.text());
       throw new Error("Erro ao salvar edição");
     }
     toast.success("Item editado com sucesso!");

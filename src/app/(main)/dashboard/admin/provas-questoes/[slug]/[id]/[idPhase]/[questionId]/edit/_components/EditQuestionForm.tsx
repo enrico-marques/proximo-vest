@@ -437,7 +437,6 @@ export function EditQuestionForm({
       const data = await res.json().catch(() => null);
       throw new Error(data?.error?.message || "Erro ao atualizar questão.");
     }
-console.log(res)
     toast.success("Questão atualizada com sucesso!");
     router.push(`/dashboard/admin/provas-questoes/${slug}/${id}/${idPhase}`);
   }
