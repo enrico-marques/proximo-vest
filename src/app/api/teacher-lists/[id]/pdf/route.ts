@@ -2,8 +2,8 @@
 import { NextResponse } from "next/server";
 import PDFDocument from "pdfkit";
 import { isBlobUrl, resolveStorageUrl } from "@/lib/blob";
-import { prisma } from "@/lib/prisma";
 import { defineRoute } from "@/server/auth/define-route";
+import { getTeacherListForPdf } from "@/server/teacher-lists";
 
 export const runtime = "nodejs";
 
@@ -164,29 +164,7 @@ export const GET = defineRoute<Params>({ perm: "teacherList.manage" }, async (re
   const { searchParams } = new URL(req.url);
   const withAnswers = searchParams.get("withAnswers") === "1";
 
-  // Busca a lista do professor
-  const list = await prisma.teacherList.findFirst({
-    where: {
-      id,
-      teacherId: user.id,
-    },
-    include: {
-      questions: {
-        orderBy: { order: "asc" },
-        include: {
-          question: {
-            include: {
-              stimulus: true,
-              mcq: {
-                include: { options: true },
-              },
-              fr: true,
-            },
-          },
-        },
-      },
-    },
-  });
+  const list = await getTeacherListForPdf(id, user.id);
 
   if (!list) {
     return NextResponse.json(

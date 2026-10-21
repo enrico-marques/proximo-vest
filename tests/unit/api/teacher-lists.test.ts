@@ -7,6 +7,7 @@ const getSession = vi.fn();
 const getAuthProfile = vi.fn();
 const consumeUsage = vi.fn();
 const db = {
+  question: { findMany: vi.fn() },
   teacherList: {
     findMany: vi.fn(),
     findFirst: vi.fn(),
@@ -45,7 +46,14 @@ const noParams = { params: Promise.resolve({}) };
 beforeEach(() => {
   vi.resetAllMocks();
   db.$transaction.mockImplementation(async (fn: (tx: typeof db) => unknown) => fn(db));
+  publishedQuestions([1, 2]);
 });
+
+function publishedQuestions(ids: number[]) {
+  db.question.findMany.mockImplementation(async ({ where }: { where: { id: { in: number[] } } }) =>
+    where.id.in.filter((id) => ids.includes(id)).map((id) => ({ id })),
+  );
+}
 
 describe("teacher lists authorization", () => {
   it("rejects anonymous requests before touching the database", async () => {
@@ -100,6 +108,50 @@ describe("teacher lists authorization", () => {
 
     expect(res.status).toBe(403);
     expect(db.teacherList.create).not.toHaveBeenCalled();
+  });
+
+  it("rejects a list with a question that is not published, without spending usage", async () => {
+    signedIn();
+    publishedQuestions([1]);
+
+    const res = await lists.POST(
+      request("POST", { name: "Lista 1", teacherName: "Prof", questionIds: [1, 3] }),
+      noParams,
+    );
+
+    expect(res.status).toBe(400);
+    expect(consumeUsage).not.toHaveBeenCalled();
+    expect(db.teacherList.create).not.toHaveBeenCalled();
+  });
+
+  it("stores each question once, in the order first sent", async () => {
+    signedIn();
+    db.teacherList.create.mockResolvedValue({ id: "new" });
+
+    await lists.POST(
+      request("POST", { name: "Lista 1", teacherName: "Prof", questionIds: [2, 1, 2] }),
+      noParams,
+    );
+
+    expect(db.teacherListQuestion.createMany).toHaveBeenCalledWith({
+      data: [
+        { listId: "new", questionId: 2, order: 1 },
+        { listId: "new", questionId: 1, order: 2 },
+      ],
+    });
+  });
+
+  it("does not rewrite a list's questions when one is not published", async () => {
+    signedIn();
+    publishedQuestions([1]);
+    db.teacherList.findFirst.mockResolvedValue({ id: "mine", name: "L", description: null, teacherName: "P" });
+    db.teacherList.update.mockResolvedValue({ id: "mine" });
+
+    const res = await list.PUT(request("PUT", { questionIds: [1, 2] }), params({ id: "mine" }));
+
+    expect(res.status).toBe(400);
+    expect(db.teacherListQuestion.deleteMany).not.toHaveBeenCalled();
+    expect(db.teacherListQuestion.createMany).not.toHaveBeenCalled();
   });
 
   it.each([

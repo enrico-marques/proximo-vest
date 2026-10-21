@@ -4,6 +4,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { defineRoute } from "@/server/auth/define-route";
 import { consumeUsage } from "@/server/limits";
+import { resolvePublishedQuestionIds } from "@/server/teacher-lists";
 
 const createTeacherListSchema = z.object({
   name: z.string().min(3, "Nome muito curto"),
@@ -48,9 +49,11 @@ export const POST = defineRoute({ perm: "teacherList.manage" }, async (req, { us
     );
   }
 
-  const { name, description, teacherName, questionIds } = parsed.data;
+  const { name, description, teacherName } = parsed.data;
 
   const created = await prisma.$transaction(async (tx) => {
+    // Validated first, so a rejected list does not spend the monthly quota.
+    const questionIds = await resolvePublishedQuestionIds(parsed.data.questionIds, tx);
     await consumeUsage(user.id, "TEACHER_LIST", tx);
 
     const list = await tx.teacherList.create({

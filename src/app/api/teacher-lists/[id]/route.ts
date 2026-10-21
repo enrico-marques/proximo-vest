@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { defineRoute } from "@/server/auth/define-route";
+import { getTeacherList, resolvePublishedQuestionIds } from "@/server/teacher-lists";
 
 const updateTeacherListSchema = z.object({
   name: z.string().min(3).optional(),
@@ -17,30 +18,7 @@ type Params = { id: string };
 export const GET = defineRoute<Params>({ perm: "teacherList.manage" }, async (_req, { params, user }) => {
   const { id } = params;
 
-  const list = await prisma.teacherList.findFirst({
-    where: {
-      id: id,
-      teacherId: user.id,
-    },
-    include: {
-      questions: {
-        orderBy: { order: "asc" },
-        include: {
-          question: {
-            include: {
-              mcq: {
-                include: { options: true },
-              },
-              fr: true,
-              subjects: {
-                include: { subject: true },
-              },
-            },
-          },
-        },
-      },
-    },
-  });
+  const list = await getTeacherList(id, user.id);
 
   if (!list) {
     return NextResponse.json(
@@ -79,9 +57,13 @@ export const PUT = defineRoute<Params>({ perm: "teacherList.manage" }, async (re
     );
   }
 
-  const { name, description, teacherName, questionIds } = parsed.data;
+  const { name, description, teacherName } = parsed.data;
 
   const updated = await prisma.$transaction(async (tx) => {
+    const questionIds = parsed.data.questionIds
+      ? await resolvePublishedQuestionIds(parsed.data.questionIds, tx)
+      : undefined;
+
     const list = await tx.teacherList.update({
       where: { id: existing.id },
       data: {
