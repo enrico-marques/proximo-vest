@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "../../../../lib/prisma";
 import { z } from "zod";
 import { defineRoute } from "@/server/auth/define-route";
+import { getExamEdition } from "@/server/exams";
 
 type Params = { id: string };
 
@@ -12,7 +13,7 @@ export const GET = defineRoute<Params>({ perm: ["examEdition.read", "examEdition
     return NextResponse.json({ error: { message: "Invalid id" } }, { status: 400 });
   }
 
-  const row = await prisma.examEdition.findUnique({ where: { id } });
+  const row = await getExamEdition(id);
   if (!row) return NextResponse.json({ error: { message: "Not found" } }, { status: 404 });
   return NextResponse.json(row);
 });

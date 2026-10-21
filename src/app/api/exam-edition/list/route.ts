@@ -1,33 +1,22 @@
-import { NextRequest, NextResponse } from "next/server"
-import { prisma } from "../../../../lib/prisma"
-import type { Prisma } from "@/generated/prisma/client";
+import { NextResponse } from "next/server"
 import { z } from "zod"
 import { defineRoute } from "@/server/auth/define-route";
+import { listExamEditions } from "@/server/exams";
 
 const Schema = z.object({
-  examBoardId: z.coerce.number().int().optional(), // coerce permite receber "1" como número
+  examBoardId: z.coerce.number().int().optional(),
   year: z.coerce.number().int().optional(),
 })
 
 export const GET = defineRoute({ perm: ["examEdition.read", "examEdition.manage"] }, async (req) => {
   const { searchParams } = new URL(req.url)
-  const examBoardId = searchParams.get("examBoardId")
-  const year = searchParams.get("year")
-
-  // valida e converte automaticamente
-  const { examBoardId: validatedExamBoardId, year: validatedYear } = Schema.parse({
-    examBoardId,
-    year,
+  const { examBoardId, year } = Schema.parse({
+    examBoardId: searchParams.get("examBoardId"),
+    year: searchParams.get("year"),
   })
 
-  const where: Prisma.ExamEditionWhereInput = {}
-  if (validatedExamBoardId) where.examBoardId = validatedExamBoardId
-  if (validatedYear) where.year = validatedYear
-
-  const rows = await prisma.examEdition.findMany({
-    where,
-    orderBy: [{ year: "desc" }, { editionLabel: "asc" }],
-  })
+  // 0 (what an absent param coerces to) was never a valid filter.
+  const rows = await listExamEditions({ examBoardId: examBoardId || undefined, year: year || undefined })
 
   return NextResponse.json(rows)
 });

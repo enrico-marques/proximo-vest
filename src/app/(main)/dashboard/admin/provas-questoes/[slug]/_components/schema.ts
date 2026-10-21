@@ -7,6 +7,5 @@ export const sectionSchema = z.object({
   year: z.number(),
   editionLabel: z.string().min(1),
   notes: z.string().nullable(),
-  slug: z.string().min(1),
  
 });

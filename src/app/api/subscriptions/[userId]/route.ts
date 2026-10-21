@@ -3,16 +3,12 @@ import { z } from "zod";
 
 import { defineRoute, HttpError } from "@/server/auth/define-route";
 import { prisma } from "@/lib/prisma";
-
-const include = {
-  user: { select: { id: true, email: true, name: true } },
-  plan: true,
-} as const;
+import { adminSubscriptionInclude, getSubscriptionForAdmin } from "@/server/subscription";
 
 export const GET = defineRoute<{ userId: string }>(
   { perm: ["subscription.read", "subscription.manage"] },
   async (_req, { params }) => {
-    const subscription = await prisma.subscription.findUnique({ where: { userId: params.userId }, include });
+    const subscription = await getSubscriptionForAdmin(params.userId);
     if (!subscription) throw new HttpError(404, "Assinatura não encontrada");
     return NextResponse.json(subscription);
   },
@@ -34,7 +30,7 @@ export const PUT = defineRoute<{ userId: string }>({ perm: "subscription.manage"
   const subscription = await prisma.subscription.update({
     where: { userId: params.userId },
     data,
-    include,
+    include: adminSubscriptionInclude,
   });
 
   return NextResponse.json(subscription);

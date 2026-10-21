@@ -32,8 +32,6 @@ export default defineConfig({
       DATABASE_URL: databaseUrl,
       BETTER_AUTH_URL: baseURL,
       NEXT_PUBLIC_APP_URL: baseURL,
-      // Admin pages still fetch their own API from the server.
-      API_URL: `${baseURL}/api`,
       BETTER_AUTH_SECRET: "e2e-only-secret-not-used-anywhere-else",
       // External services are not exercised by e2e; the clients only need non-empty keys to load.
       RESEND_API_KEY: "re_e2e_unused",

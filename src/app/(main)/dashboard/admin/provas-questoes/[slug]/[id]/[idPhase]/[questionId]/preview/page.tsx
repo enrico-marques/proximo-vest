@@ -10,94 +10,19 @@ import {
   CardContent,
 } from "@/components/ui/card";
 import { ApproveQuestionButton } from "./_components/ApproveQuestionButton";
-import { QuestionStatusBadge, type StatusType } from "./_components/status-badge";
+import { QuestionStatusBadge } from "./_components/status-badge";
 import { requirePageAuth } from "@/utils/access";
-import { headers } from "next/headers";
+import { getQuestionDetail, type QuestionDetail } from "@/server/questions";
+import { parseId } from "@/lib/utils";
 
 
 const md = createQuestionMarkdown();
 
-// Tipos esperados da API de questão (ajusta conforme seu backend)
-type SubjectDTO = {
-  id: number | string | null;
-  name: string;
-  slug: string;
-};
-
-type SkillDTO = {
-  id: number | string | null;
-  code: string | null;
-  label: string;
-};
-
-type McqOption = {
-  label: "A" | "B" | "C" | "D" | "E";
-  textPlain: string;
-};
-
-type McqBlock = {
-  optionCount: number;
-  shuffleOptions: boolean;
-  correctOptionKey: "A" | "B" | "C" | "D" | "E";
-  options: McqOption[];
-};
-
-type FrExpectedAnswer = {
-  label: string;
-  answerHtml: string;
-  maxScore: number;
-};
-
-type FrBlock = {
-  maxScore: number;
-  answerGuidanceHtml?: string | null;
-  expectedAnswers: FrExpectedAnswer[];
-};
-
-type StimulusBlock = {
-  contentHtml: string;
-  contentText?: string | null;
-  sourceRef?: string | null;
-};
-
-type QuestionResponse = {
-  id: number;
-  examPhaseId: number;
-  stimulusId: number;
-  numberLabel: string;
-  isDiscursive: boolean;
-  difficulty: string | null;
-  status: StatusType;
-  sourcePageStart: number | null;
-  sourcePageEnd: number | null;
-  createdAt: string;
-  updatedAt: string;
-
-  stimulus: StimulusBlock;
-
-  mcq?: McqBlock | null;
-  fr?: FrBlock | null;
-
-  subjects?: SubjectDTO[];
-  skills?: SkillDTO[];
-};
-
-// Busca a questão na API (ajusta o endpoint se precisar)
-async function getQuestion(questionId: string): Promise<QuestionResponse> {
-  const res = await fetch(`${process.env.API_URL}/question/${questionId}`, {
-    cache: "no-store",
-    headers: {
-      // encaminha os cookies da requisição atual pra sua API interna
-      cookie: (await headers()).get("cookie") ?? "",
-    },
-  });
-
-  if (!res.ok) {
-    notFound();
-  }
-
-  const data = (await res.json()) as QuestionResponse;
-  return data;
+async function getQuestion(questionId: string): Promise<QuestionDetail> {
+  const id = parseId(questionId);
+  const question = id === null ? null : await getQuestionDetail(id);
+  if (!question) notFound();
+  return question;
 }
 
 type PageProps = {
@@ -122,7 +47,7 @@ export default async function QuestionPreviewPage({ params }: PageProps) {
 
   const isDiscursive = question.isDiscursive;
 
-  const stimulusHtml = md.render(question.stimulus.contentHtml || "");
+  const stimulusHtml = md.render(question.stimulus?.contentHtml || "");
 
   const mcq = question.mcq;
   const fr = question.fr;
@@ -174,21 +99,15 @@ export default async function QuestionPreviewPage({ params }: PageProps) {
         )}
 
         {question.subjects &&
-          question.subjects.map((subj, idx) => (
-            <Badge
-              key={`${subj.id ?? subj.slug}-${idx}`}
-              variant="outline"
-            >
-              {subj.name}
+          question.subjects.map(({ subject }) => (
+            <Badge key={subject.id} variant="outline">
+              {subject.name}
             </Badge>
           ))}
 
         {question.skills &&
-          question.skills.map((skill, idx) => (
-            <Badge
-              key={`${skill.id ?? skill.code ?? skill.label}-${idx}`}
-              variant="outline"
-            >
+          question.skills.map(({ skill }) => (
+            <Badge key={skill.id} variant="outline">
               {skill.label}
               {skill.code && (
                 <span className="ml-1 opacity-70">({skill.code})</span>
@@ -209,7 +128,7 @@ export default async function QuestionPreviewPage({ params }: PageProps) {
                 <span className="text-sm font-medium">
                   Questão {isDiscursive ? "discursiva" : "objetiva"}
                 </span>
-                {question.stimulus.sourceRef && (
+                {question.stimulus?.sourceRef && (
                   <span className="text-[11px] text-muted-foreground">
                     Fonte: {question.stimulus.sourceRef}
                   </span>
@@ -329,7 +248,7 @@ export default async function QuestionPreviewPage({ params }: PageProps) {
                   <div
                     className="prose prose-xs max-w-none rounded-md bg-muted/40 p-2 dark:prose-invert"
                     dangerouslySetInnerHTML={{
-                      __html: md.render(fr.expectedAnswers[0].answerHtml),
+                      __html: md.render(fr.expectedAnswers[0].answerHtml ?? ""),
                     }}
                   />
                 </div>

@@ -78,7 +78,7 @@ type QuestionSkill = {
 
 type McqOption = {
   label: "A" | "B" | "C" | "D" | "E";
-  textPlain: string;
+  textPlain: string | null;
 };
 
 type McqBlock = {
@@ -89,19 +89,19 @@ type McqBlock = {
 };
 
 type FrExpectedAnswer = {
-  label: string;
-  answerHtml: string;
-  maxScore: number;
+  label: string | null;
+  answerHtml: string | null;
+  maxScore: number | null;
 };
 
 type FrBlock = {
-  maxScore: number;
+  maxScore: number | null;
   answerGuidanceHtml?: string | null;
   expectedAnswers: FrExpectedAnswer[];
 };
 
 type StimulusBlock = {
-  contentHtml: string;
+  contentHtml: string | null;
   contentText?: string | null;
   sourceRef?: string | null;
 };
@@ -111,7 +111,7 @@ export type QuestionForEdit = {
   examPhaseId: number;
   numberLabel: string;
   isDiscursive: boolean;
-  stimulus: StimulusBlock;
+  stimulus: StimulusBlock | null;
   subjects?: QuestionSubject[];
   skills?: QuestionSkill[];
   mcq?: McqBlock | null;
@@ -247,8 +247,8 @@ export function EditQuestionForm({
       subjects: initialSubjects,
       skills: initialSkills,
       status: question.status ?? "DRAFT",
-      stimulusText: question.stimulus.contentHtml || "",
-      stimulusSourceRef: question.stimulus.sourceRef || "",
+      stimulusText: question.stimulus?.contentHtml || "",
+      stimulusSourceRef: question.stimulus?.sourceRef || "",
 
       optionCount: effectiveOptionCount === 4 ? "4" : "5",
       shuffleOptions: mcq?.shuffleOptions ?? true,

@@ -1,6 +1,7 @@
+import { notFound } from "next/navigation";
 import { FormCreateEdition } from "./_components/formCreateEdition";
 import { requirePageAuth } from "@/utils/access";
-import { headers } from "next/headers";
+import { getExamBoardBySlug } from "@/server/exams";
 
 interface PageProps {
   params: { slug: string };
@@ -16,20 +17,9 @@ export default async function Provas({ params }: PageProps) {
   });
 
   const { slug } = await params;
-  const res = await fetch(`${process.env.API_URL}/exam-board/slug/${slug}`, {
-    cache: "no-store",
-    headers: {
-      // encaminha os cookies da requisição atual pra sua API interna
-      cookie: (await headers()).get("cookie") ?? "",
-    },
-  });
 
-  const board = await res.json();
-
-  const boardId = board.id as number;
-  if (boardId === undefined) {
-    return null;
-  }
+  const board = await getExamBoardBySlug(slug);
+  if (!board) notFound();
 
   return (
     <div className="@container/main flex flex-col gap-4 md:gap-6">
@@ -42,7 +32,7 @@ export default async function Provas({ params }: PageProps) {
         <code>2025,2024,2023</code>
       </p>
 
-      <FormCreateEdition boardId={boardId} slug={slug} />
+      <FormCreateEdition boardId={board.id} slug={slug} />
     </div>
   );
 }

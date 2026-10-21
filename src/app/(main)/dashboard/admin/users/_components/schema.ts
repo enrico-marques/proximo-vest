@@ -8,7 +8,8 @@ export const sectionSchema = z.object({
   image: z.string().nullable().optional(),
   createdAt: z.coerce.date(),
   updatedAt: z.coerce.date(),
-  status: z.enum(["active", "suspended", "deleted"]).default("active"),
+  // Stored as a free string in the database ("active", "suspended", "deleted").
+  status: z.string(),
 
   roles: z
     .array(

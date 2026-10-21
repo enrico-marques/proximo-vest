@@ -37,3 +37,12 @@ export async function resolvePlan(userId: string, audience: PlanAudience, db: Db
   }
   return fallback;
 }
+
+export const adminSubscriptionInclude = {
+  user: { select: { id: true, email: true, name: true } },
+  plan: true,
+} satisfies Prisma.SubscriptionInclude;
+
+export function getSubscriptionForAdmin(userId: string) {
+  return prisma.subscription.findUnique({ where: { userId }, include: adminSubscriptionInclude });
+}

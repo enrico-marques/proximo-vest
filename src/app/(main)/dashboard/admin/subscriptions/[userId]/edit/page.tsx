@@ -8,15 +8,9 @@ import {
   CardContent,
 } from "@/components/ui/card";
 import { notFound } from "next/navigation";
-import type { Subscription, Plan, User } from "@/generated/prisma/client";
 import { AdminSubscriptionForm } from "./_components/admin-subscription-form";
-import { headers } from "next/headers";
 import { listPlans } from "@/server/plans";
-
-type SubscriptionWithRelations = Subscription & {
-  user: Pick<User, "id" | "email" | "name">;
-  plan: Plan | null;
-};
+import { getSubscriptionForAdmin } from "@/server/subscription";
 
 export default async function AdminSubscriptionEditPage({
   params,
@@ -32,29 +26,13 @@ export default async function AdminSubscriptionEditPage({
   });
 
   const { userId } = await params;
-  const headersList = headers();
 
-  const [subRes, plans] = await Promise.all([
-    fetch(`${process.env.API_URL}/subscriptions/${userId}`, {
-      cache: "no-store",
-      headers: {
-        // encaminha os cookies da requisição atual pra sua API interna
-        cookie: (await headersList).get("cookie") ?? "",
-      },
-    }),
+  const [subscription, plans] = await Promise.all([
+    getSubscriptionForAdmin(userId),
     listPlans({ includeInactive: true }),
   ]);
 
-  if (subRes.status === 404) {
-    return notFound();
-  }
-
-  if (!subRes.ok) {
-    throw new Error("Erro ao carregar assinatura");
-  }
-
-  const subscription =
-    (await subRes.json()) as SubscriptionWithRelations;
+  if (!subscription) notFound();
 
   return (
     <div className="max-w-2xl">

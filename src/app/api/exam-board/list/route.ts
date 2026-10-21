@@ -1,9 +1,8 @@
 export const runtime = "nodejs"
-import { prisma } from "../../../../lib/prisma"
-import { NextRequest } from "next/server"
 import { z } from "zod"
 import { json } from "../../_utils"
 import { defineRoute } from "@/server/auth/define-route";
+import { listExamBoards } from "@/server/exams";
 
 const Schema = z.object({
   filter: z.string().optional(),
@@ -11,20 +10,7 @@ const Schema = z.object({
 
 export const GET = defineRoute({ perm: ["examBoard.read", "examBoard.manage"] }, async (req) => {
   const { searchParams } = new URL(req.url)
-  const filter = searchParams.get("filter") || undefined
-  const { filter: validatedFilter } = Schema.parse({ filter })
+  const { filter } = Schema.parse({ filter: searchParams.get("filter") || undefined })
 
-  const data = await prisma.examBoard.findMany({
-    where: validatedFilter
-      ? {
-          OR: [
-            { name: { contains: validatedFilter, mode: "insensitive" } },
-            { slug: { contains: validatedFilter, mode: "insensitive" } },
-          ],
-        }
-      : undefined,
-    orderBy: { name: "asc" },
-  })
-
-  return json(data)
+  return json(await listExamBoards({ filter }))
 });

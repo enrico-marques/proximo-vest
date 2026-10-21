@@ -41,7 +41,6 @@ export function FormCreateEdition({ boardId, slug }: { boardId: number; slug: st
   const onSubmit = async (data: z.infer<typeof FormSchema>) => {
     setServerError(null);
     toast("Carregando...");
-    console.log(process.env.API_URL);
     try {
         data.year = Number(data.year);
       const res = await fetch(`/api/exam-edition/create`, {

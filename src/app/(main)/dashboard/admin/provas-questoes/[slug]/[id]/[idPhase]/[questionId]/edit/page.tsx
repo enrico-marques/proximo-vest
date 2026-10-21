@@ -4,99 +4,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { EditQuestionForm } from "./_components/EditQuestionForm";
 import { requirePageAuth } from "@/utils/access";
-import { headers } from "next/headers";
+import { getQuestionDetail, type QuestionDetail } from "@/server/questions";
+import { parseId } from "@/lib/utils";
 
-// Mesmo shape que você usou na página de preview
-type McqOption = {
-  label: "A" | "B" | "C" | "D" | "E";
-  textPlain: string;
-};
-
-type McqBlock = {
-  optionCount: number;
-  shuffleOptions: boolean;
-  correctOptionKey: "A" | "B" | "C" | "D" | "E";
-  options: McqOption[];
-};
-
-type FrExpectedAnswer = {
-  label: string;
-  answerHtml: string;
-  maxScore: number;
-};
-
-type FrBlock = {
-  maxScore: number;
-  answerGuidanceHtml?: string | null;
-  expectedAnswers: FrExpectedAnswer[];
-};
-
-type StimulusBlock = {
-  contentHtml: string;
-  contentText?: string | null;
-  sourceRef?: string | null;
-};
-
-type SubjectDTO = {
-  questionId: number;
-  subjectId: number;
-  subject: {
-    id: number | string;
-    name: string;
-    slug: string;
-  };
-};
-
-type SkillDTO = {
-  questionId: number;
-  skillId: number;
-  skill: {
-    id: number | string;
-    code: string | null;
-    label: string;
-  };
-};
-type QuestionApiResponse = {
-  id: number;
-  examPhaseId: number;
-  stimulusId: number;
-  numberLabel: string;
-  isDiscursive: boolean;
-  difficulty: string | null;
-  status: "DRAFT" | "PUBLISHED" | "ARCHIVED";
-  sourcePageStart: number | null;
-  sourcePageEnd: number | null;
-  createdAt: string;
-  updatedAt: string;
-
-  stimulus: StimulusBlock;
-
-  mcq?: McqBlock | null;
-  fr?: FrBlock | null;
-
-  subjects?: SubjectDTO[];
-  skills?: SkillDTO[];
-};
-
-// Shape que o EditQuestionForm espera (é compatível com o de cima)
-type QuestionForEdit = QuestionApiResponse;
-
-// Busca a questão na sua API (mesmo endpoint da preview)
-async function getQuestion(questionId: string): Promise<QuestionForEdit> {
-  const res = await fetch(`${process.env.API_URL}/question/${questionId}`, {
-    cache: "no-store",
-    headers: {
-      // encaminha os cookies da requisição atual pra sua API interna
-      cookie: (await headers()).get("cookie") ?? "",
-    },
-  });
-
-  if (!res.ok) {
-    notFound();
-  }
-
-  const data = (await res.json()) as QuestionApiResponse;
-  return data;
+async function getQuestion(questionId: string): Promise<QuestionDetail> {
+  const id = parseId(questionId);
+  const question = id === null ? null : await getQuestionDetail(id);
+  if (!question) notFound();
+  return question;
 }
 
 type PageProps = {

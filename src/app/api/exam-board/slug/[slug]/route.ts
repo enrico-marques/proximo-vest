@@ -1,4 +1,3 @@
-import { prisma } from "../../../../../lib/prisma";
 import { NextRequest } from "next/server";
 import { z } from "zod";
 import {
@@ -8,6 +7,7 @@ import {
   badRequest,
 } from "../../../_utils";
 import { defineRoute } from "@/server/auth/define-route";
+import { getExamBoardBySlug } from "@/server/exams";
 
 type Params = { slug: string };
 
@@ -19,11 +19,7 @@ const PatchSchema = z.object({
 export const GET = defineRoute<Params>({ perm: ["examBoard.read", "examBoard.manage"] }, async (req, ctx) => {
   const { slug } = await ctx.params;
 
-  const found = await prisma.examBoard.findUnique({
-    where: {
-      slug: slug,
-    },
-  });
+  const found = await getExamBoardBySlug(slug);
   if (!found) return notFound("ExamBoard not found");
   return json(found);
 });

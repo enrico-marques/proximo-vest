@@ -1,32 +1,17 @@
-import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "../../../../lib/prisma";
-import type { Prisma } from "@/generated/prisma/client";
+import { NextResponse } from "next/server";
 import { z } from "zod";
 import { defineRoute } from "@/server/auth/define-route";
+import { listRoles } from "@/server/access-control";
 
 const Schema = z.object({
-  // "true" | "false" vindo da URL, opcional
   isActive: z.enum(["true", "false"]).optional(),
 });
 
 export const GET = defineRoute({ perm: ["role.read", "role.manage"] }, async (req) => {
   const { searchParams } = new URL(req.url);
-  const isActiveParam = searchParams.get("isActive");
+  const { isActive } = Schema.parse({ isActive: searchParams.get("isActive") ?? undefined });
 
-  // valida o valor da query
-  const { isActive } = Schema.parse({
-    isActive: isActiveParam ?? undefined,
-  });
-
-  const where: Prisma.RoleWhereInput = {};
-  if (isActive !== undefined) {
-    where.isActive = isActive === "true";
-  }
-
-  const rows = await prisma.role.findMany({
-    where,
-    orderBy: [{ createdAt: "desc" }],
-  });
+  const rows = await listRoles({ isActive: isActive === undefined ? undefined : isActive === "true" });
 
   return NextResponse.json(rows);
 });

@@ -4,6 +4,7 @@ import { NextRequest } from "next/server";
 import { z } from "zod";
 import { json, readBody, notFound, badRequest } from "../../_utils";
 import { defineRoute } from "@/server/auth/define-route";
+import { getQuestionDetail } from "@/server/questions";
 
 
 type Params = { id: string };
@@ -13,16 +14,7 @@ export const GET = defineRoute<Params>({ perm: ["question.read", "question.creat
   const id = Number(idStr);
   if (!Number.isFinite(id)) return badRequest("Invalid id");
 
-  const found = await prisma.question.findUnique({
-    where: { id },
-    include: {
-      stimulus: { include: { assets: true } },
-      subjects: { include: { subject: true } },
-      skills: { include: { skill: true } },
-      mcq: { include: { options: true } },
-      fr: { include: { expectedAnswers: true, rubrics: true } },
-    },
-  });
+  const found = await getQuestionDetail(id);
   if (!found) return notFound("Question not found");
   return json(found);
 });
@@ -170,16 +162,7 @@ export const PATCH = defineRoute<Params>({ perm: "question.update" }, async (req
   }
 
   // volta a questão completa (igual ao GET)
-  const full = await prisma.question.findUnique({
-    where: { id },
-    include: {
-      stimulus: { include: { assets: true } },
-      subjects: { include: { subject: true } },
-      skills: { include: { skill: true } },
-      mcq: { include: { options: true } },
-      fr: { include: { expectedAnswers: true, rubrics: true } },
-    },
-  });
+  const full = await getQuestionDetail(id);
 
   return json(full);
 });

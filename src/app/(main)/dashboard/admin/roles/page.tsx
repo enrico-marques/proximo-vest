@@ -1,7 +1,7 @@
 import { DataTable } from "./_components/data-table";
 import { SectionCards } from "./_components/section-cards";
-import { headers } from "next/headers";
 import { requirePageAuth } from "@/utils/access";
+import { listRoles } from "@/server/access-control";
 
 export default async function Page() {
   await requirePageAuth({
@@ -12,23 +12,11 @@ export default async function Page() {
     onForbiddenRedirect: "/dashboard", // opcional
   });
 
-  const headersList = headers();
-  const res = await fetch(`${process.env.API_URL}/roles/list`, {
-    cache: "no-store",
-    headers: {
-      // encaminha os cookies da requisição atual pra sua API interna
-      cookie: (await headersList).get("cookie") ?? "",
-    },
-  });
-
-  if (!res.ok) throw new Error("Falha ao buscar boards");
-
-  const data = await res.json();
-  const roleNumber = data.length as number;
+  const data = await listRoles();
 
   return (
     <div className="@container/main flex flex-col gap-4 md:gap-6">
-      <SectionCards roleNumber={roleNumber} />
+      <SectionCards roleNumber={data.length} />
       <DataTable data={data} />
     </div>
   );
