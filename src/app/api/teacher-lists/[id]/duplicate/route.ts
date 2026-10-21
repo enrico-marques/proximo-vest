@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { defineRoute } from "@/server/auth/define-route";
 import { consumeUsage } from "@/server/limits";
+import { partitionPublishedQuestionIds } from "@/server/teacher-lists";
 
 type Params = { id: string };
 
@@ -25,7 +26,12 @@ export const POST = defineRoute<Params>({ perm: "teacherList.manage" }, async (_
     return NextResponse.json({ error: "Lista não encontrada" }, { status: 404 });
   }
 
-  const duplicated = await prisma.$transaction(async (tx) => {
+  const { duplicated, omittedQuestions } = await prisma.$transaction(async (tx) => {
+    // Questions unpublished since the list was built are not carried over to the copy.
+    const { published, unavailable } = await partitionPublishedQuestionIds(
+      list.questions.map((item) => item.questionId),
+      tx,
+    );
     await consumeUsage(user.id, "TEACHER_LIST", tx);
 
     const newList = await tx.teacherList.create({
@@ -37,18 +43,18 @@ export const POST = defineRoute<Params>({ perm: "teacherList.manage" }, async (_
       },
     });
 
-    if (list.questions.length > 0) {
+    if (published.length > 0) {
       await tx.teacherListQuestion.createMany({
-        data: list.questions.map((item) => ({
+        data: published.map((questionId, index) => ({
           listId: newList.id,
-          questionId: item.questionId,
-          order: item.order,
+          questionId,
+          order: index + 1,
         })),
       });
     }
 
-    return newList;
+    return { duplicated: newList, omittedQuestions: unavailable.length };
   });
 
-  return NextResponse.json(duplicated, { status: 201 });
+  return NextResponse.json({ ...duplicated, omittedQuestions }, { status: 201 });
 });

@@ -154,6 +154,35 @@ describe("teacher lists authorization", () => {
     expect(db.teacherListQuestion.createMany).not.toHaveBeenCalled();
   });
 
+  it("duplicates only the published questions and reports how many were left out", async () => {
+    signedIn();
+    publishedQuestions([1, 2]);
+    db.teacherList.findFirst.mockResolvedValue({
+      id: "mine",
+      name: "Lista",
+      description: null,
+      teacherId: TEACHER.id,
+      teacherName: "Prof",
+      questions: [
+        { questionId: 2, order: 1 },
+        { questionId: 7, order: 2 }, // a draft
+        { questionId: 1, order: 3 },
+      ],
+    });
+    db.teacherList.create.mockResolvedValue({ id: "copy" });
+
+    const res = await duplicate.POST(request("POST"), params({ id: "mine" }));
+
+    expect(res.status).toBe(201);
+    expect(await res.json()).toMatchObject({ id: "copy", omittedQuestions: 1 });
+    expect(db.teacherListQuestion.createMany).toHaveBeenCalledWith({
+      data: [
+        { listId: "copy", questionId: 2, order: 1 },
+        { listId: "copy", questionId: 1, order: 2 },
+      ],
+    });
+  });
+
   it.each([
     ["GET", () => list.GET(request(), params({ id: "other" }))],
     ["PUT", () => list.PUT(request("PUT", { name: "Hack" }), params({ id: "other" }))],

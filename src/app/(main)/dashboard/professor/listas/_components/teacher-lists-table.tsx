@@ -95,7 +95,16 @@ export function TeacherListsTable() {
         throw new Error(await readApiError(res, "Erro ao duplicar lista."));
       }
 
-      toast.success("Lista duplicada com sucesso.");
+      const { omittedQuestions } = (await res.json()) as { omittedQuestions?: number };
+      if (omittedQuestions) {
+        toast.warning(
+          omittedQuestions === 1
+            ? "Lista duplicada. 1 questão não publicada não foi copiada."
+            : `Lista duplicada. ${omittedQuestions} questões não publicadas não foram copiadas.`,
+        );
+      } else {
+        toast.success("Lista duplicada com sucesso.");
+      }
       await refreshLists();
     } catch (err) {
       console.error(err);

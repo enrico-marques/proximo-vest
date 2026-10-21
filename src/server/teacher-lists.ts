@@ -8,19 +8,31 @@ type Db = Prisma.TransactionClient | typeof prisma;
 const PUBLISHED_ITEMS = { question: { status: "PUBLISHED" } } satisfies Prisma.TeacherListQuestionWhereInput;
 
 /**
- * Deduplicates the ids (keeping the first position) and fails unless every one of them
- * is a published question, so a teacher cannot pull drafts or archived questions by id.
+ * Splits the ids (deduplicated, first position kept) into published questions and the rest.
+ * The single rule for what a teacher list may hold.
  */
-export async function resolvePublishedQuestionIds(questionIds: number[], db: Db = prisma) {
+export async function partitionPublishedQuestionIds(questionIds: number[], db: Db = prisma) {
   const ids = [...new Set(questionIds)];
-  if (ids.length === 0) return ids;
+  if (ids.length === 0) return { published: [], unavailable: [] };
 
   const found = await db.question.findMany({
     where: { id: { in: ids }, status: "PUBLISHED" },
     select: { id: true },
   });
-  const published = new Set(found.map((q) => q.id));
-  const unavailable = ids.filter((id) => !published.has(id));
+  const publishedSet = new Set(found.map((q) => q.id));
+
+  return {
+    published: ids.filter((id) => publishedSet.has(id)),
+    unavailable: ids.filter((id) => !publishedSet.has(id)),
+  };
+}
+
+/**
+ * Fails unless every id is a published question, so a teacher cannot pull drafts or
+ * archived questions by id.
+ */
+export async function resolvePublishedQuestionIds(questionIds: number[], db: Db = prisma) {
+  const { published: ids, unavailable } = await partitionPublishedQuestionIds(questionIds, db);
 
   if (unavailable.length > 0) {
     throw new HttpError(400, `Questões inexistentes ou não publicadas: ${unavailable.join(", ")}`);
