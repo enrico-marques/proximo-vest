@@ -1,4 +1,4 @@
-// app/dashboard/provas-questoes/[slug]/[id]/[idPhase]/[questionId]/edit/page.tsx
+// app/(main)/dashboard/admin/provas-questoes/[slug]/[id]/[idPhase]/[questionId]/edit/page.tsx
 import { notFound } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";

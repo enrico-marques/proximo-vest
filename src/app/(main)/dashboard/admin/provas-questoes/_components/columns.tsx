@@ -194,7 +194,7 @@ export const dashboardColumns: DataTableColumnDef<z.infer<typeof sectionSchema>>
     cell: ({ row }) => (
       <a
         className="underline-offset-2 hover:underline"
-        href={`/dashboard/provas-questoes/${row.original.slug}`}
+        href={`/dashboard/admin/provas-questoes/${row.original.slug}`}
       >
         <Label>{row.original.name}</Label>
       </a>

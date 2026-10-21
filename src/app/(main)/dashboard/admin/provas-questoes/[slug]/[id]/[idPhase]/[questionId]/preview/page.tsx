@@ -80,7 +80,7 @@ export default async function QuestionPreviewPage({ params }: PageProps) {
           />
 
           <Button variant="outline" size="sm" asChild>
-            <a href={`/dashboard/provas-questoes/${slug}/${id}/${idPhase}`}>
+            <a href={`/dashboard/admin/provas-questoes/${slug}/${id}/${idPhase}`}>
               Voltar para a lista
             </a>
           </Button>

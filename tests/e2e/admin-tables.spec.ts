@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-import { E2E_ADMIN, E2E_EXTRA_BOARDS } from "./fixtures";
+import { E2E_ADMIN, E2E_BOARD_SLUG, E2E_EXTRA_BOARDS } from "./fixtures";
 import { asClient } from "./helpers";
 
 test.use(asClient("10.0.2.1"));
@@ -16,6 +16,10 @@ test("the exam board table renders rows and paginates", async ({ page }) => {
   const rows = page.locator("tbody tr");
   await expect(rows).toHaveCount(10);
   await expect(page.getByText("Banca E2E 01", { exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Banca E2E 01", exact: true })).toHaveAttribute(
+    "href",
+    `/dashboard/admin/provas-questoes/${E2E_BOARD_SLUG}-01`,
+  );
 
   const totalBoards = E2E_EXTRA_BOARDS + 1;
   await expect(page.getByText(/Página\s*1\s*de\s*2/)).toBeVisible();
