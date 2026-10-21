@@ -368,15 +368,9 @@ export function EditQuestionForm({
   // ---------- Update question ----------
 
   async function updateQuestion(values: QuestionFormValues) {
-    const subjectsArray =
-      values.subjects && values.subjects.length > 0
-        ? (values.subjects as string[])
-        : undefined;
-
-    const skillsArray =
-      values.skills && values.skills.length > 0
-        ? (values.skills as string[])
-        : undefined;
+    // Always sent: an empty array clears the question's subjects/skills.
+    const subjectsArray = values.subjects ?? [];
+    const skillsArray = values.skills ?? [];
 
     const stimulus = {
       contentHtml: values.stimulusText,
