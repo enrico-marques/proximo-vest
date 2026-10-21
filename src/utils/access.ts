@@ -119,7 +119,7 @@ export async function requirePageAuth(opts?: {
 }) {
   const {
     onUnauthorizedRedirect = "/auth/login",
-    onUnverifiedRedirect = "/verify-email",
+    onUnverifiedRedirect = "/auth/verify-email",
     onSuspendedRedirect = "/suspended",
     onDeletedRedirect = "/deleted",
     onForbiddenRedirect = "/dashboard",

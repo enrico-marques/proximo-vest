@@ -54,7 +54,7 @@ export function LoginForm() {
       return;
     }
     if (!me.emailVerified) {
-      router.replace("/verify-email");
+      router.replace("/auth/verify-email");
       return;
     }
     if (me.status === "suspended") {
