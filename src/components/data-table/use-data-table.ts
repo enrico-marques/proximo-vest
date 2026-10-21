@@ -56,16 +56,20 @@ export function useDataTable<TData extends RowData>({
   data,
   columns,
   getRowId,
+  manualPagination = false,
 }: {
   data: TData[];
   columns: DataTableColumnDef<TData>[];
   getRowId?: (row: TData, index: number) => string;
+  /** The server already sent a single page: render every row it got. */
+  manualPagination?: boolean;
 }) {
   return useTable({
     features: dataTableFeatures,
     data,
     columns,
     getRowId,
+    manualPagination,
     initialState: { pagination: { pageIndex: 0, pageSize: DEFAULT_PAGE_SIZE } },
   });
 }

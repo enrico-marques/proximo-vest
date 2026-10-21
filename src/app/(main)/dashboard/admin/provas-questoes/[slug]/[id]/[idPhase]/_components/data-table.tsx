@@ -42,11 +42,9 @@ const columns = React.useMemo<DataTableColumnDef<Question, unknown>[]>(
     data,
     columns,
     getRowId: (row) => row.id.toString(),
+    // The page passes one server-side page; QuestionPagination moves between pages.
+    manualPagination: true,
   });
-
-  const pageIndex = table.state.pagination.pageIndex;
-  const pageSize = table.state.pagination.pageSize;
-  const pageCount = table.getPageCount();
 
   return (
     <Tabs
@@ -120,71 +118,6 @@ const columns = React.useMemo<DataTableColumnDef<Question, unknown>[]>(
           </Table>
         </div>
 
-        {/* Paginação */}
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between px-2 py-3 text-sm">
-          <div className="flex items-center gap-2">
-            <span>Linhas por página</span>
-            <select
-              className="h-8 rounded border px-2 text-sm"
-              value={pageSize}
-              onChange={(e) => table.setPageSize(Number(e.target.value))}
-            >
-              {[5, 10, 20, 50].map((size) => (
-                <option key={size} value={size}>
-                  {size}
-                </option>
-              ))}
-            </select>
-
-            <span className="text-muted-foreground">
-              Página <strong>{pageIndex + 1}</strong> de{" "}
-              <strong>{pageCount || 1}</strong>
-            </span>
-          </div>
-
-          <div className="flex items-center gap-1 justify-end">
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              className="h-8 w-8"
-              onClick={() => table.setPageIndex(0)}
-              disabled={!table.getCanPreviousPage()}
-            >
-              {"<<"}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              className="h-8 w-8"
-              onClick={() => table.previousPage()}
-              disabled={!table.getCanPreviousPage()}
-            >
-              {"<"}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              className="h-8 w-8"
-              onClick={() => table.nextPage()}
-              disabled={!table.getCanNextPage()}
-            >
-              {">"}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              className="h-8 w-8"
-              onClick={() => table.setPageIndex(pageCount - 1)}
-              disabled={!table.getCanNextPage()}
-            >
-              {">>"}
-            </Button>
-          </div>
-        </div>
       </TabsContent>
 
       {/* Outras tabs placeholder */}

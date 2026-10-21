@@ -108,3 +108,20 @@ describe("admin pages require the permission of the data they read", () => {
     expect(dataCalls().length).toBeGreaterThan(0);
   });
 });
+
+describe("phase question pagination", () => {
+  it("sends a page past the end back to the last page", async () => {
+    signedInWith(["examPhase.manage", "question.read"]);
+    db.examPhase.findUnique.mockResolvedValue({ id: 2, phaseNumber: 1 });
+    db.question.findMany.mockResolvedValue([]);
+    db.question.count.mockResolvedValue(45);
+    const { default: Page } = (await import(`${P}/[slug]/[id]/[idPhase]/page`)) as PageModule;
+
+    await expect(
+      Page({
+        params: Promise.resolve({ slug: "enem", id: "1", idPhase: "2" }),
+        searchParams: Promise.resolve({ page: "9", pageSize: "20" }),
+      }),
+    ).rejects.toThrow("REDIRECT /dashboard/admin/provas-questoes/enem/1/2?page=3&pageSize=20");
+  });
+});

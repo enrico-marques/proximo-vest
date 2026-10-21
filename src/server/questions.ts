@@ -1,3 +1,5 @@
+import { z } from "zod";
+
 import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import type { PermissionRequirement } from "@/utils/access-core";
@@ -17,6 +19,12 @@ export const QUESTION_LIST_INCLUDES = [
 ] as const;
 
 export type QuestionListInclude = (typeof QUESTION_LIST_INCLUDES)[number];
+
+/** Page and page size from untrusted search params; bad values fall back instead of failing. */
+export const questionPageSchema = z.object({
+  page: z.coerce.number().int().min(1).catch(1),
+  pageSize: z.coerce.number().int().min(1).max(100).catch(20),
+});
 
 export type QuestionListQuery = {
   examPhaseId?: number;
@@ -59,7 +67,8 @@ export async function listQuestions({
   const [items, total] = await Promise.all([
     prisma.question.findMany({
       where,
-      orderBy: { [orderBy]: order },
+      // id breaks ties so rows never repeat or vanish between pages.
+      orderBy: orderBy === "id" ? { id: order } : [{ [orderBy]: order }, { id: order }],
       skip: (page - 1) * pageSize,
       take: pageSize,
       include: selectInclude,
@@ -67,7 +76,7 @@ export async function listQuestions({
     prisma.question.count({ where }),
   ]);
 
-  return { total, page, pageSize, items };
+  return { total, page, pageSize, pageCount: Math.max(1, Math.ceil(total / pageSize)), items };
 }
 
 const questionDetailInclude = {
