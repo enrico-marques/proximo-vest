@@ -1,7 +1,7 @@
 import { z } from "zod"
 import { json } from "../../_utils"
 import { defineRoute } from "@/server/auth/define-route";
-import { listQuestions, QUESTION_LIST_INCLUDES } from "@/server/questions";
+import { QUESTION_READ, listQuestions, QUESTION_LIST_INCLUDES } from "@/server/questions";
 
 const Schema = z.object({
   examPhaseId: z.coerce.number().int().optional(),
@@ -14,7 +14,7 @@ const Schema = z.object({
   pageSize: z.coerce.number().int().min(1).max(200).default(50),
 })
 
-export const GET = defineRoute({ perm: ["question.read", "question.create", "question.update"] }, async (req) => {
+export const GET = defineRoute({ perm: QUESTION_READ }, async (req) => {
   const { searchParams } = new URL(req.url)
 
   // Supports both ?include=a&include=b and ?include=a,b

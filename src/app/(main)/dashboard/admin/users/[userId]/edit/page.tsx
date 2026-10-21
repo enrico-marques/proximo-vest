@@ -1,7 +1,7 @@
 // app/dashboard/admin/users/[userId]/edit/page.tsx
 import { notFound } from "next/navigation";
 import { requirePageAuth } from "@/utils/access";
-import { getUserForAdmin } from "@/server/users";
+import { USER_READ, getUserForAdmin } from "@/server/users";
 import { UserAccessPage } from "./_components/UserAcessPage";
 
 export default async function UserEditAndAccessPage({
@@ -10,7 +10,8 @@ export default async function UserEditAndAccessPage({
   params: { userId: string };
 }) {
   await requirePageAuth({
-    // Same permission the /users/list route enforced when this page fetched it.
+    // The page's own permission plus the read permission of every service it calls.
+    allOf: [USER_READ],
     perm: "user.read",
     emailVerified: true,
     blockSuspended: true,

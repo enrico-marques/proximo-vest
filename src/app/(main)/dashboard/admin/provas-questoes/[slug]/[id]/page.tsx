@@ -3,7 +3,7 @@ import { BoardViewClient } from "./_components/board-view-client";
 import { DataTable } from "./_components/data-table";
 import { SectionCards } from "./_components/section-cards";
 import { requirePageAuth } from "@/utils/access";
-import { getExamEdition, listExamPhases } from "@/server/exams";
+import { EXAM_EDITION_READ, EXAM_PHASE_READ, getExamEdition, listExamPhases } from "@/server/exams";
 import { parseId } from "@/lib/utils";
 
 interface PageProps {
@@ -12,6 +12,8 @@ interface PageProps {
 
 export default async function Provas({ params }: PageProps) {
   await requirePageAuth({
+    // The page's own permission plus the read permission of every service it calls.
+    allOf: [EXAM_EDITION_READ, EXAM_PHASE_READ],
     perm: ["examEdition.manage"],
     emailVerified: true,
     blockSuspended: true,

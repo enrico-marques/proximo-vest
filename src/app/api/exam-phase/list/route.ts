@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { z } from "zod"
 import { defineRoute } from "@/server/auth/define-route";
-import { listExamPhases } from "@/server/exams";
+import { EXAM_PHASE_READ, listExamPhases } from "@/server/exams";
 
 // Missing, empty or non-numeric query values mean "no filter".
 const intFromQuery = z.preprocess(
@@ -19,7 +19,7 @@ const Schema = z.object({
   dayNumber: intFromQuery,
 })
 
-export const GET = defineRoute({ perm: ["examPhase.read", "examPhase.manage"] }, async (req) => {
+export const GET = defineRoute({ perm: EXAM_PHASE_READ }, async (req) => {
   const { searchParams } = new URL(req.url)
 
   const filters = Schema.parse({

@@ -7,7 +7,7 @@ import {
   badRequest,
 } from "../../../_utils";
 import { defineRoute } from "@/server/auth/define-route";
-import { getExamBoardBySlug } from "@/server/exams";
+import { EXAM_BOARD_READ, getExamBoardBySlug } from "@/server/exams";
 
 type Params = { slug: string };
 
@@ -16,7 +16,7 @@ const PatchSchema = z.object({
   name: z.string().min(2).optional(),
 });
 
-export const GET = defineRoute<Params>({ perm: ["examBoard.read", "examBoard.manage"] }, async (req, ctx) => {
+export const GET = defineRoute<Params>({ perm: EXAM_BOARD_READ }, async (req, ctx) => {
   const { slug } = await ctx.params;
 
   const found = await getExamBoardBySlug(slug);

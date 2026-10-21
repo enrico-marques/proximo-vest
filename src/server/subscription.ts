@@ -1,5 +1,6 @@
 import type { Plan, PlanAudience, Prisma, Subscription, SubscriptionStatus } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
+import type { PermissionRequirement } from "@/utils/access-core";
 
 type Db = Prisma.TransactionClient | typeof prisma;
 
@@ -37,6 +38,9 @@ export async function resolvePlan(userId: string, audience: PlanAudience, db: Db
   }
   return fallback;
 }
+
+// Shared by the admin route and page so they cannot drift apart.
+export const SUBSCRIPTION_READ = ["subscription.read", "subscription.manage"] as const satisfies PermissionRequirement;
 
 export const adminSubscriptionInclude = {
   user: { select: { id: true, email: true, name: true } },

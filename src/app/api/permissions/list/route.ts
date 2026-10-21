@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { defineRoute } from "@/server/auth/define-route";
-import { listPermissions } from "@/server/access-control";
+import { PERMISSION_READ, listPermissions } from "@/server/access-control";
 
-export const GET = defineRoute({ perm: ["perm.read", "perm.manage", "role.manage"] }, async (req) => {
+export const GET = defineRoute({ perm: PERMISSION_READ }, async (req) => {
   const { searchParams } = new URL(req.url);
 
   const rows = await listPermissions({

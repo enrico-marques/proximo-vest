@@ -1,5 +1,9 @@
 import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
+import type { PermissionRequirement } from "@/utils/access-core";
+
+// Read permissions live next to the queries so API routes and pages cannot drift apart.
+export const USER_READ = "user.read" satisfies PermissionRequirement;
 
 const adminUserSelect = {
   id: true,

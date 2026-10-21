@@ -1,10 +1,12 @@
 import { DataTable } from "./_components/data-table";
 import { SectionCards } from "./_components/section-cards";
 import { requirePageAuth } from "@/utils/access";
-import { listExamBoards } from "@/server/exams";
+import { EXAM_BOARD_READ, listExamBoards } from "@/server/exams";
 
 export default async function Provas() {
   await requirePageAuth({
+    // The page's own permission plus the read permission of every service it calls.
+    allOf: [EXAM_BOARD_READ],
     perm: ["examBoard.manage"],
     emailVerified: true,
     blockSuspended: true,

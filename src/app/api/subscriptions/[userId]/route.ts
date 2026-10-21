@@ -3,10 +3,10 @@ import { z } from "zod";
 
 import { defineRoute, HttpError } from "@/server/auth/define-route";
 import { prisma } from "@/lib/prisma";
-import { adminSubscriptionInclude, getSubscriptionForAdmin } from "@/server/subscription";
+import { SUBSCRIPTION_READ, adminSubscriptionInclude, getSubscriptionForAdmin } from "@/server/subscription";
 
 export const GET = defineRoute<{ userId: string }>(
-  { perm: ["subscription.read", "subscription.manage"] },
+  { perm: SUBSCRIPTION_READ },
   async (_req, { params }) => {
     const subscription = await getSubscriptionForAdmin(params.userId);
     if (!subscription) throw new HttpError(404, "Assinatura não encontrada");

@@ -4,12 +4,12 @@ import { NextRequest } from "next/server";
 import { z } from "zod";
 import { json, readBody, notFound, badRequest } from "../../_utils";
 import { defineRoute } from "@/server/auth/define-route";
-import { getQuestionDetail } from "@/server/questions";
+import { QUESTION_READ, getQuestionDetail } from "@/server/questions";
 
 
 type Params = { id: string };
 
-export const GET = defineRoute<Params>({ perm: ["question.read", "question.create", "question.update"] }, async (_req, ctx) => {
+export const GET = defineRoute<Params>({ perm: QUESTION_READ }, async (_req, ctx) => {
   const { id: idStr } = await ctx.params;
   const id = Number(idStr);
   if (!Number.isFinite(id)) return badRequest("Invalid id");

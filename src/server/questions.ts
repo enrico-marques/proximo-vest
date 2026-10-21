@@ -1,5 +1,9 @@
 import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
+import type { PermissionRequirement } from "@/utils/access-core";
+
+// Read permissions live next to the queries so API routes and pages cannot drift apart.
+export const QUESTION_READ = ["question.read", "question.create", "question.update"] as const satisfies PermissionRequirement;
 
 export const QUESTION_LIST_INCLUDES = [
   "stimulus",

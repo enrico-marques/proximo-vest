@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { EditQuestionForm } from "./_components/EditQuestionForm";
 import { requirePageAuth } from "@/utils/access";
-import { getQuestionDetail, type QuestionDetail } from "@/server/questions";
+import { QUESTION_READ, getQuestionDetail, type QuestionDetail } from "@/server/questions";
 import { parseId } from "@/lib/utils";
 
 async function getQuestion(questionId: string): Promise<QuestionDetail> {
@@ -25,6 +25,8 @@ type PageProps = {
 
 export default async function EditQuestionPage({ params }: PageProps) {
   await requirePageAuth({
+    // The page's own permission plus the read permission of every service it calls.
+    allOf: [QUESTION_READ],
     perm: ["question.update"],
     emailVerified: true,
     blockSuspended: true,

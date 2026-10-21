@@ -3,7 +3,7 @@ import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-import { type AuthProfile, type PermissionKey, type RoleName, can } from "./access-core";
+import { type AuthProfile, type PermissionKey, type PermissionRequirement, type RoleName, can } from "./access-core";
 
 // ============================================================================
 // SESSÃO (Server only)
@@ -104,7 +104,9 @@ export const getAuthProfile = cache(async (
 // ============================================================================
 export async function requirePageAuth(opts?: {
   role?: RoleName | RoleName[];
-  perm?: PermissionKey | PermissionKey[];
+  perm?: PermissionRequirement;
+  /** Extra requirements that must all hold; pass the read permission of each service the page calls. */
+  allOf?: readonly PermissionRequirement[];
   emailVerified?: boolean;
   blockSuspended?: boolean;
   blockDeleted?: boolean;
@@ -150,7 +152,7 @@ export async function requirePageAuth(opts?: {
     return redirect(onUnverifiedRedirect);
   }
 
-  if (!can(profile, { role: opts?.role, perm: opts?.perm })) {
+  if (!can(profile, { role: opts?.role, perm: opts?.perm, allOf: opts?.allOf })) {
     return redirect(onForbiddenRedirect);
   }
 

@@ -5,7 +5,7 @@ import { ZodError } from "zod";
 import { Prisma } from "@/generated/prisma/client";
 import { auth } from "@/lib/auth";
 import { getAuthProfile } from "@/utils/access";
-import { can, type AuthProfile, type PermissionKey, type RoleName } from "@/utils/access-core";
+import { can, type AuthProfile, type PermissionRequirement, type RoleName } from "@/utils/access-core";
 
 /**
  * Every API route must be built with `defineRoute`. The default is closed:
@@ -15,7 +15,7 @@ export type RouteAccess = "public" | AuthRequirement;
 
 export type AuthRequirement = {
   /** Any of the listed permissions grants access. */
-  perm?: PermissionKey | PermissionKey[];
+  perm?: PermissionRequirement;
   /** Any of the listed roles grants access. */
   role?: RoleName | RoleName[];
   /** Defaults to true. Only flows a not-yet-verified user must reach should opt out. */

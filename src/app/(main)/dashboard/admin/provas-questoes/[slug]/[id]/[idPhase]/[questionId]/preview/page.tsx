@@ -12,7 +12,7 @@ import {
 import { ApproveQuestionButton } from "./_components/ApproveQuestionButton";
 import { QuestionStatusBadge } from "./_components/status-badge";
 import { requirePageAuth } from "@/utils/access";
-import { getQuestionDetail, type QuestionDetail } from "@/server/questions";
+import { QUESTION_READ, getQuestionDetail, type QuestionDetail } from "@/server/questions";
 import { parseId } from "@/lib/utils";
 
 
@@ -36,6 +36,8 @@ type PageProps = {
 
 export default async function QuestionPreviewPage({ params }: PageProps) {
   await requirePageAuth({
+    // The page's own permission plus the read permission of every service it calls.
+    allOf: [QUESTION_READ],
     perm: ["question.read"],
     emailVerified: true,
     blockSuspended: true,

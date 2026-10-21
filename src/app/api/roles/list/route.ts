@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { defineRoute } from "@/server/auth/define-route";
-import { listRoles } from "@/server/access-control";
+import { ROLE_READ, listRoles } from "@/server/access-control";
 
 const Schema = z.object({
   isActive: z.enum(["true", "false"]).optional(),
 });
 
-export const GET = defineRoute({ perm: ["role.read", "role.manage"] }, async (req) => {
+export const GET = defineRoute({ perm: ROLE_READ }, async (req) => {
   const { searchParams } = new URL(req.url);
   const { isActive } = Schema.parse({ isActive: searchParams.get("isActive") ?? undefined });
 

@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { CreateQuestionForm } from "./_components/formCreateEdition";
 import { requirePageAuth } from "@/utils/access";
-import { getExamPhase } from "@/server/exams";
+import { EXAM_PHASE_READ, getExamPhase } from "@/server/exams";
 import { parseId } from "@/lib/utils";
 
 interface PageProps {
@@ -10,6 +10,8 @@ interface PageProps {
 
 export default async function Provas({ params }: PageProps) {
   await requirePageAuth({
+    // The page's own permission plus the read permission of every service it calls.
+    allOf: [EXAM_PHASE_READ],
     perm: ["question.create"],
     emailVerified: true,
     blockSuspended: true,

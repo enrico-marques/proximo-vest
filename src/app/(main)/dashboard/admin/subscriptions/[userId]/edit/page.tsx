@@ -10,7 +10,7 @@ import {
 import { notFound } from "next/navigation";
 import { AdminSubscriptionForm } from "./_components/admin-subscription-form";
 import { listPlans } from "@/server/plans";
-import { getSubscriptionForAdmin } from "@/server/subscription";
+import { SUBSCRIPTION_READ, getSubscriptionForAdmin } from "@/server/subscription";
 
 export default async function AdminSubscriptionEditPage({
   params,
@@ -18,6 +18,8 @@ export default async function AdminSubscriptionEditPage({
   params: { userId: string };
 }) {
   await requirePageAuth({
+    // The page's own permission plus the read permission of every service it calls.
+    allOf: [SUBSCRIPTION_READ],
     emailVerified: true,
     blockSuspended: true,
     blockDeleted: true,

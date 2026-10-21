@@ -1,5 +1,11 @@
 import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
+import type { PermissionRequirement } from "@/utils/access-core";
+
+// Read permissions live next to the queries so API routes and pages cannot drift apart.
+export const EXAM_BOARD_READ = ["examBoard.read", "examBoard.manage"] as const satisfies PermissionRequirement;
+export const EXAM_EDITION_READ = ["examEdition.read", "examEdition.manage"] as const satisfies PermissionRequirement;
+export const EXAM_PHASE_READ = ["examPhase.read", "examPhase.manage"] as const satisfies PermissionRequirement;
 
 export function listExamBoards({ filter }: { filter?: string } = {}) {
   return prisma.examBoard.findMany({

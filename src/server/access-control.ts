@@ -1,5 +1,10 @@
 import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
+import type { PermissionRequirement } from "@/utils/access-core";
+
+// Read permissions live next to the queries so API routes and pages cannot drift apart.
+export const PERMISSION_READ = ["perm.read", "perm.manage", "role.manage"] as const satisfies PermissionRequirement;
+export const ROLE_READ = ["role.read", "role.manage"] as const satisfies PermissionRequirement;
 
 export function listPermissions({ onlyActive, resource }: { onlyActive?: boolean; resource?: string } = {}) {
   const where: Prisma.PermissionWhereInput = {};

@@ -2,11 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "../../../../lib/prisma";
 import { z } from "zod";
 import { defineRoute } from "@/server/auth/define-route";
-import { getExamPhase } from "@/server/exams";
+import { EXAM_PHASE_READ, getExamPhase } from "@/server/exams";
 
 type Params = { id: string };
 
-export const GET = defineRoute<Params>({ perm: ["examPhase.read", "examPhase.manage"] }, async (_req, ctx) => {
+export const GET = defineRoute<Params>({ perm: EXAM_PHASE_READ }, async (_req, ctx) => {
   const { id: idStr } = await ctx.params;
   const id = Number(idStr);
   if (!Number.isFinite(id)) {

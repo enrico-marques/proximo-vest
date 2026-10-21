@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { FormCreateEdition } from "./_components/formCreateEdition";
 import { requirePageAuth } from "@/utils/access";
-import { getExamBoardBySlug } from "@/server/exams";
+import { EXAM_BOARD_READ, getExamBoardBySlug } from "@/server/exams";
 
 interface PageProps {
   params: { slug: string };
@@ -9,6 +9,8 @@ interface PageProps {
 
 export default async function Provas({ params }: PageProps) {
   await requirePageAuth({
+    // The page's own permission plus the read permission of every service it calls.
+    allOf: [EXAM_BOARD_READ],
     perm: ["examEdition.manage"],
     emailVerified: true,
     blockSuspended: true,

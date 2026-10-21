@@ -2,11 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "../../../../lib/prisma";
 import { z } from "zod";
 import { defineRoute } from "@/server/auth/define-route";
-import { getExamEdition } from "@/server/exams";
+import { EXAM_EDITION_READ, getExamEdition } from "@/server/exams";
 
 type Params = { id: string };
 
-export const GET = defineRoute<Params>({ perm: ["examEdition.read", "examEdition.manage"] }, async (_req, ctx) => {
+export const GET = defineRoute<Params>({ perm: EXAM_EDITION_READ }, async (_req, ctx) => {
   const { id: idStr } = await ctx.params;
   const id = Number(idStr);
   if (!Number.isFinite(id)) {

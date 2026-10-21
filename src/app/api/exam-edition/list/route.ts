@@ -1,14 +1,14 @@
 import { NextResponse } from "next/server"
 import { z } from "zod"
 import { defineRoute } from "@/server/auth/define-route";
-import { listExamEditions } from "@/server/exams";
+import { EXAM_EDITION_READ, listExamEditions } from "@/server/exams";
 
 const Schema = z.object({
   examBoardId: z.coerce.number().int().optional(),
   year: z.coerce.number().int().optional(),
 })
 
-export const GET = defineRoute({ perm: ["examEdition.read", "examEdition.manage"] }, async (req) => {
+export const GET = defineRoute({ perm: EXAM_EDITION_READ }, async (req) => {
   const { searchParams } = new URL(req.url)
   const { examBoardId, year } = Schema.parse({
     examBoardId: searchParams.get("examBoardId"),
